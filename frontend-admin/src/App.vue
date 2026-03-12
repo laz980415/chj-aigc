@@ -35,6 +35,14 @@ type ClientPayload = {
   active: boolean;
 };
 
+type BrandPayload = {
+  id: string;
+  clientId: string;
+  name: string;
+  summary: string;
+  active: boolean;
+};
+
 type AssetPayload = {
   id: string;
   name: string;
@@ -79,6 +87,7 @@ const rules = ref<RulePayload[]>([]);
 const wallet = ref<WalletPayload>({ tenantId: "tenant-demo", balance: "0", ledgerCount: 0 });
 const quotas = ref<QuotaPayload>({ projectImageRemaining: "0", userTokenRemaining: "0" });
 const clients = ref<ClientPayload[]>([]);
+const brands = ref<BrandPayload[]>([]);
 const assets = ref<AssetPayload[]>([]);
 const session = ref<SessionPayload | null>(null);
 const users = ref<UserPayload[]>([]);
@@ -115,6 +124,18 @@ const rechargeForm = reactive({
   referenceId: "dashboard",
 });
 
+const clientForm = reactive({
+  clientId: "client-ui-1",
+  name: "新广告主",
+});
+
+const brandForm = reactive({
+  brandId: "brand-ui-1",
+  clientId: "client-demo",
+  name: "新品牌",
+  summary: "品牌简介",
+});
+
 const quotaForm = reactive({
   allocationId: "quota-ui-1",
   scopeType: "project",
@@ -130,6 +151,16 @@ const dbSummary = computed(() => {
   }
   return dbInfo.value.passwordConfigured ? "已配置" : "缺少密码";
 });
+
+const currentRole = computed(() => session.value?.roleKey ?? "");
+const isPlatformAdmin = computed(() => currentRole.value === "platform_super_admin");
+const canViewTenantWorkspace = computed(() => ["tenant_owner", "tenant_member"].includes(currentRole.value));
+const canManageTenantWorkspace = computed(() => currentRole.value === "tenant_owner");
+const canRechargeTenant = computed(() => ["platform_super_admin", "tenant_owner"].includes(currentRole.value));
+const workspaceTitle = computed(() => isPlatformAdmin.value ? "平台后台" : "租户后台");
+const workspaceCopy = computed(() => isPlatformAdmin.value
+  ? "平台侧只管理租户开通、租户充值、模型权限和租户级别运营配置。"
+  : "租户侧负责项目、成员、客户、品牌和素材等日常运营动作。");
 
 async function fetchJson<T>(url: string, init?: RequestInit): Promise<T> {
   const token = localStorage.getItem("chj_aigc_token");
@@ -150,40 +181,54 @@ async function fetchJson<T>(url: string, init?: RequestInit): Promise<T> {
 async function loadDashboard() {
   loading.value = true;
   error.value = "";
-  const [
-    health,
-    dbPayload,
-    summaryPayload,
-    rolePayload,
-    userPayload,
-    rulePayload,
-    walletPayload,
-    quotaPayload,
-    clientPayload,
-    assetPayload,
-  ] = await Promise.all([
+  summary.value = { policies: 0, auditEvents: 0, users: 0 };
+  roles.value = [];
+  users.value = [];
+  rules.value = [];
+  wallet.value = { tenantId: "tenant-demo", balance: "0", ledgerCount: 0 };
+  quotas.value = { projectImageRemaining: "0", userTokenRemaining: "0" };
+  clients.value = [];
+  brands.value = [];
+  assets.value = [];
+
+  const [health, dbPayload] = await Promise.all([
     fetchJson<{ status: string }>("/api/health"),
     fetchJson<DbInfoPayload>("/api/db-info"),
-    fetchJson<SummaryPayload>("/api/admin/summary"),
-    fetchJson<string[]>("/api/admin/roles"),
-    fetchJson<UserPayload[]>("/api/admin/users"),
-    fetchJson<RulePayload[]>("/api/admin/model-access-rules"),
-    fetchJson<WalletPayload>("/api/tenant/wallet"),
-    fetchJson<QuotaPayload>("/api/tenant/quotas"),
-    fetchJson<ClientPayload[]>("/api/tenant/clients"),
-    fetchJson<AssetPayload[]>("/api/tenant/assets"),
   ]);
 
   healthStatus.value = health.status;
   dbInfo.value = dbPayload;
-  summary.value = summaryPayload;
-  roles.value = rolePayload;
-  users.value = userPayload;
-  rules.value = rulePayload;
-  wallet.value = walletPayload;
-  quotas.value = quotaPayload;
-  clients.value = clientPayload;
-  assets.value = assetPayload;
+
+  if (isPlatformAdmin.value) {
+    const [summaryPayload, rolePayload, userPayload, rulePayload, walletPayload] = await Promise.all([
+      fetchJson<SummaryPayload>("/api/admin/summary"),
+      fetchJson<string[]>("/api/admin/roles"),
+      fetchJson<UserPayload[]>("/api/admin/users"),
+      fetchJson<RulePayload[]>("/api/admin/model-access-rules"),
+      fetchJson<WalletPayload>("/api/tenant/wallet"),
+    ]);
+    summary.value = summaryPayload;
+    roles.value = rolePayload;
+    users.value = userPayload;
+    rules.value = rulePayload;
+    wallet.value = walletPayload;
+  }
+
+  if (canViewTenantWorkspace.value) {
+    const [walletPayload, quotaPayload, clientPayload, brandPayload, assetPayload] = await Promise.all([
+      fetchJson<WalletPayload>("/api/tenant/wallet"),
+      fetchJson<QuotaPayload>("/api/tenant/quotas"),
+      fetchJson<ClientPayload[]>("/api/tenant/clients"),
+      fetchJson<BrandPayload[]>("/api/tenant/brands"),
+      fetchJson<AssetPayload[]>("/api/tenant/assets"),
+    ]);
+    wallet.value = walletPayload;
+    quotas.value = quotaPayload;
+    clients.value = clientPayload;
+    brands.value = brandPayload;
+    assets.value = assetPayload;
+  }
+
   loading.value = false;
 }
 
@@ -297,6 +342,35 @@ async function saveQuota() {
   await loadDashboard();
 }
 
+async function createClient() {
+  success.value = "";
+  error.value = "";
+  await fetchJson<ClientPayload>("/api/tenant/clients", {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json",
+    },
+    body: JSON.stringify(clientForm),
+  });
+  success.value = `客户 ${clientForm.name} 已创建`;
+  brandForm.clientId = clientForm.clientId;
+  await loadDashboard();
+}
+
+async function createBrand() {
+  success.value = "";
+  error.value = "";
+  await fetchJson<BrandPayload>("/api/tenant/brands", {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json",
+    },
+    body: JSON.stringify(brandForm),
+  });
+  success.value = `品牌 ${brandForm.name} 已创建`;
+  await loadDashboard();
+}
+
 async function runAction(action: () => Promise<void>) {
   try {
     await action();
@@ -324,7 +398,7 @@ onMounted(() => {
           <button class="action-button full-button" type="submit">登录系统</button>
         </form>
         <div class="login-tip">
-          演示超管账号：admin / Admin@123
+          演示账号：admin / Admin@123，tenant_owner / Tenant@123
         </div>
       </div>
     </section>
@@ -333,10 +407,9 @@ onMounted(() => {
     <header class="hero">
       <div class="hero-copy-block">
         <p class="eyebrow">CHJ AIGC</p>
-        <h1>管理后台</h1>
+        <h1>{{ workspaceTitle }}</h1>
         <p class="hero-copy">
-          当前采用前后端分离架构。Vue 3 负责运营后台界面，Spring Boot 负责
-          API 和业务编排。
+          {{ workspaceCopy }}
         </p>
       </div>
       <div class="hero-status">
@@ -363,8 +436,8 @@ onMounted(() => {
       <section class="panel panel-wide">
         <div class="panel-head">
           <div>
-            <p class="panel-label">总览</p>
-            <h2>平台概览</h2>
+            <p class="panel-label">{{ isPlatformAdmin ? "平台总览" : "租户总览" }}</p>
+            <h2>{{ isPlatformAdmin ? "租户运营概览" : "租户工作台概览" }}</h2>
           </div>
           <div class="panel-actions">
             <button class="action-button" type="button" @click="runAction(loadDashboard)">
@@ -376,15 +449,15 @@ onMounted(() => {
           </div>
         </div>
         <div class="stats-grid">
-          <article class="stat-card">
+          <article v-if="isPlatformAdmin" class="stat-card">
             <span>策略数</span>
             <strong>{{ summary.policies }}</strong>
           </article>
-          <article class="stat-card">
+          <article v-if="isPlatformAdmin" class="stat-card">
             <span>账号数</span>
             <strong>{{ summary.users }}</strong>
           </article>
-          <article class="stat-card">
+          <article v-if="isPlatformAdmin" class="stat-card">
             <span>审计事件</span>
             <strong>{{ summary.auditEvents }}</strong>
           </article>
@@ -392,14 +465,22 @@ onMounted(() => {
             <span>钱包余额</span>
             <strong>{{ wallet.balance }}</strong>
           </article>
-          <article class="stat-card">
-            <span>用户 Token 剩余</span>
+          <article v-if="canViewTenantWorkspace" class="stat-card">
+            <span>成员 Token 剩余</span>
             <strong>{{ quotas.userTokenRemaining }}</strong>
+          </article>
+          <article v-if="canViewTenantWorkspace" class="stat-card">
+            <span>客户数</span>
+            <strong>{{ clients.length }}</strong>
+          </article>
+          <article v-if="canViewTenantWorkspace" class="stat-card">
+            <span>品牌数</span>
+            <strong>{{ brands.length }}</strong>
           </article>
         </div>
       </section>
 
-      <section class="panel">
+      <section v-if="isPlatformAdmin" class="panel">
         <div class="panel-head">
           <div>
             <p class="panel-label">账号管理</p>
@@ -443,7 +524,7 @@ onMounted(() => {
         </div>
       </section>
 
-      <section class="panel">
+      <section v-if="isPlatformAdmin" class="panel">
         <div class="panel-head">
           <div>
             <p class="panel-label">超管</p>
@@ -496,12 +577,12 @@ onMounted(() => {
       <section class="panel">
         <div class="panel-head">
           <div>
-            <p class="panel-label">租户资金</p>
-            <h2>钱包与额度</h2>
+            <p class="panel-label">{{ isPlatformAdmin ? "平台侧租户运营" : "租户资金" }}</p>
+            <h2>{{ isPlatformAdmin ? "租户充值" : "钱包与额度" }}</h2>
           </div>
         </div>
         <div class="form-grid split-forms">
-          <form class="form-stack" @submit.prevent="runAction(rechargeWallet)">
+          <form v-if="canRechargeTenant" class="form-stack" @submit.prevent="runAction(rechargeWallet)">
             <h3>钱包充值</h3>
             <input v-model="rechargeForm.entryId" placeholder="流水 ID" required>
             <input v-model="rechargeForm.amount" placeholder="充值金额" required>
@@ -510,7 +591,7 @@ onMounted(() => {
             <button class="action-button" type="submit">充值</button>
           </form>
 
-          <form class="form-stack" @submit.prevent="runAction(saveQuota)">
+          <form v-if="canManageTenantWorkspace" class="form-stack" @submit.prevent="runAction(saveQuota)">
             <h3>额度配置</h3>
             <input v-model="quotaForm.allocationId" placeholder="额度 ID" required>
             <select v-model="quotaForm.scopeType">
@@ -530,22 +611,41 @@ onMounted(() => {
         </div>
         <div class="quota-strip">
           <div class="mini-stat">
-            <span>项目图片额度</span>
-            <strong>{{ quotas.projectImageRemaining }}</strong>
+            <span>{{ isPlatformAdmin ? "充值流水数" : "项目图片额度" }}</span>
+            <strong>{{ isPlatformAdmin ? wallet.ledgerCount : quotas.projectImageRemaining }}</strong>
           </div>
-          <div class="mini-stat">
-            <span>用户 Token 额度</span>
+          <div v-if="canViewTenantWorkspace" class="mini-stat">
+            <span>成员 Token 额度</span>
             <strong>{{ quotas.userTokenRemaining }}</strong>
           </div>
         </div>
       </section>
 
-      <section class="panel">
+      <section v-if="canViewTenantWorkspace" class="panel">
         <div class="panel-head">
           <div>
-            <p class="panel-label">品牌约束</p>
+            <p class="panel-label">租户品牌资产</p>
             <h2>客户与素材</h2>
           </div>
+        </div>
+        <div class="form-grid split-forms">
+          <form v-if="canManageTenantWorkspace" class="form-stack" @submit.prevent="runAction(createClient)">
+            <h3>创建客户</h3>
+            <input v-model="clientForm.clientId" placeholder="客户 ID" required>
+            <input v-model="clientForm.name" placeholder="客户名称" required>
+            <button class="action-button" type="submit">创建客户</button>
+          </form>
+
+          <form v-if="canManageTenantWorkspace" class="form-stack" @submit.prevent="runAction(createBrand)">
+            <h3>创建品牌</h3>
+            <input v-model="brandForm.brandId" placeholder="品牌 ID" required>
+            <select v-model="brandForm.clientId">
+              <option v-for="client in clients" :key="client.id" :value="client.id">{{ client.name }}</option>
+            </select>
+            <input v-model="brandForm.name" placeholder="品牌名称" required>
+            <input v-model="brandForm.summary" placeholder="品牌简介" required>
+            <button class="action-button" type="submit">创建品牌</button>
+          </form>
         </div>
         <div class="assets-layout">
           <div>
@@ -554,6 +654,15 @@ onMounted(() => {
               <li v-for="client in clients" :key="client.id">
                 <strong>{{ client.name }}</strong>
                 <div class="subtext">{{ client.id }}</div>
+              </li>
+            </ul>
+          </div>
+          <div>
+            <h3>品牌列表</h3>
+            <ul class="card-list">
+              <li v-for="brand in brands" :key="brand.id">
+                <strong>{{ brand.name }}</strong>
+                <div class="subtext">{{ brand.clientId }} · {{ brand.summary }}</div>
               </li>
             </ul>
           </div>

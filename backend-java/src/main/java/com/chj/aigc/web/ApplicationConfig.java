@@ -13,6 +13,10 @@ import com.chj.aigc.billing.InMemoryTenantBillingStore;
 import com.chj.aigc.billing.JdbcTenantBillingStore;
 import com.chj.aigc.billing.TenantBillingService;
 import com.chj.aigc.billing.TenantBillingStore;
+import com.chj.aigc.asset.AssetCatalogStore;
+import com.chj.aigc.asset.InMemoryAssetCatalogStore;
+import com.chj.aigc.asset.JdbcAssetCatalogStore;
+import com.chj.aigc.asset.TenantAssetCatalogService;
 import org.springframework.beans.factory.ObjectProvider;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
@@ -63,6 +67,20 @@ public class ApplicationConfig {
     @Bean
     public TenantBillingService tenantBillingService(TenantBillingStore tenantBillingStore) {
         return new TenantBillingService(tenantBillingStore);
+    }
+
+    @Bean
+    public AssetCatalogStore assetCatalogStore(ObjectProvider<JdbcTemplate> jdbcTemplateProvider) {
+        JdbcTemplate jdbcTemplate = jdbcTemplateProvider.getIfAvailable();
+        if (jdbcTemplate != null) {
+            return new JdbcAssetCatalogStore(jdbcTemplate);
+        }
+        return new InMemoryAssetCatalogStore();
+    }
+
+    @Bean
+    public TenantAssetCatalogService tenantAssetCatalogService(AssetCatalogStore assetCatalogStore) {
+        return new TenantAssetCatalogService(assetCatalogStore);
     }
 
     @Bean

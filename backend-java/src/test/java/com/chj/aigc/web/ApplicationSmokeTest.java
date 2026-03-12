@@ -29,13 +29,13 @@ class ApplicationSmokeTest {
     @Autowired
     private ObjectMapper objectMapper;
 
-    private String loginAsAdmin() throws Exception {
+    private String login(String username, String password) throws Exception {
         String loginBody = """
                 {
-                  "username": "admin",
-                  "password": "Admin@123"
+                  "username": "%s",
+                  "password": "%s"
                 }
-                """;
+                """.formatted(username, password);
 
         MvcResult result = mockMvc.perform(post("/api/auth/login")
                         .contentType("application/json")
@@ -49,6 +49,14 @@ class ApplicationSmokeTest {
                 }
         );
         return String.valueOf(payload.get("token"));
+    }
+
+    private String loginAsAdmin() throws Exception {
+        return login("admin", "Admin@123");
+    }
+
+    private String loginAsTenantOwner() throws Exception {
+        return login("tenant_owner", "Tenant@123");
     }
 
     @Test
@@ -110,7 +118,7 @@ class ApplicationSmokeTest {
 
     @Test
     void adminAndTenantMutationEndpointsWork() throws Exception {
-        String token = loginAsAdmin();
+        String adminToken = loginAsAdmin();
 
         String createRuleBody = """
                 {
@@ -125,7 +133,7 @@ class ApplicationSmokeTest {
                 """;
 
         mockMvc.perform(post("/api/admin/model-access-rules")
-                        .header("X-Auth-Token", token)
+                        .header("X-Auth-Token", adminToken)
                         .contentType("application/json")
                         .content(createRuleBody))
                 .andExpect(status().isOk());
@@ -140,7 +148,7 @@ class ApplicationSmokeTest {
                 """;
 
         MvcResult walletResult = mockMvc.perform(post("/api/tenant/wallet/recharge")
-                        .header("X-Auth-Token", token)
+                        .header("X-Auth-Token", adminToken)
                         .contentType("application/json")
                         .content(rechargeBody))
                 .andExpect(status().isOk())
@@ -151,6 +159,8 @@ class ApplicationSmokeTest {
                 }
         );
         assertEquals("1250.0000", wallet.get("balance"));
+
+        String tenantToken = loginAsTenantOwner();
 
         String quotaBody = """
                 {
@@ -164,7 +174,7 @@ class ApplicationSmokeTest {
                 """;
 
         MvcResult quotaResult = mockMvc.perform(post("/api/tenant/quotas")
-                        .header("X-Auth-Token", token)
+                        .header("X-Auth-Token", tenantToken)
                         .contentType("application/json")
                         .content(quotaBody))
                 .andExpect(status().isOk())
@@ -227,5 +237,69 @@ class ApplicationSmokeTest {
                 }
         );
         assertFalse(users.isEmpty());
+    }
+
+    @Test
+    void tenantCanCreateClientAndBrand() throws Exception {
+        String token = loginAsTenantOwner();
+
+        String createClientBody = """
+                {
+                  "clientId": "client-created-1",
+                  "name": "新广告主"
+                }
+                """;
+
+        mockMvc.perform(post("/api/tenant/clients")
+                        .header("X-Auth-Token", token)
+                        .contentType("application/json")
+                        .content(createClientBody))
+                .andExpect(status().isOk());
+
+        String createBrandBody = """
+                {
+                  "brandId": "brand-created-1",
+                  "clientId": "client-created-1",
+                  "name": "新品牌",
+                  "summary": "面向年轻用户的新品品牌"
+                }
+                """;
+
+        mockMvc.perform(post("/api/tenant/brands")
+                        .header("X-Auth-Token", token)
+                        .contentType("application/json")
+                        .content(createBrandBody))
+                .andExpect(status().isOk());
+
+        MvcResult clientsResult = mockMvc.perform(get("/api/tenant/clients")
+                        .header("X-Auth-Token", token))
+                .andExpect(status().isOk())
+                .andReturn();
+        List<Map<String, Object>> clients = objectMapper.readValue(
+                clientsResult.getResponse().getContentAsByteArray(),
+                new TypeReference<>() {
+                }
+        );
+        assertFalse(clients.isEmpty());
+
+        MvcResult brandsResult = mockMvc.perform(get("/api/tenant/brands/client-created-1")
+                        .header("X-Auth-Token", token))
+                .andExpect(status().isOk())
+                .andReturn();
+        List<Map<String, Object>> brands = objectMapper.readValue(
+                brandsResult.getResponse().getContentAsByteArray(),
+                new TypeReference<>() {
+                }
+        );
+        assertFalse(brands.isEmpty());
+    }
+
+    @Test
+    void tenantOwnerCannotAccessAdminApi() throws Exception {
+        String token = loginAsTenantOwner();
+
+        mockMvc.perform(get("/api/admin/users")
+                        .header("X-Auth-Token", token))
+                .andExpect(status().isForbidden());
     }
 }
