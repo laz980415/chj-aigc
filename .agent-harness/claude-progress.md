@@ -24,3 +24,8 @@ Validation: Ran python -m unittest discover -s tests -v and verified model regis
 Implemented the billing core in platform_core/billing.py with platform pricing rules, metered usage inputs, charge quoting, vendor reference snapshots, immutable ledger entries, recharge handling, and seeded pricing for copy, image, and video capabilities.
 
 Validation: Ran python -m unittest discover -s tests -v and verified billing tests for token pricing, image usage settlement, and historical ledger stability after price changes.
+
+## 2026-03-12T04:52:57+00:00 - feature-005 - Implement tenant wallet recharge and quota allocation
+Implemented a Java Maven module for tenant finance with wallet ledger entries, recharge and usage deduction services, quota allocations for project and user scopes, and quota consumption checks across token, image, video, daily-request, and concurrency dimensions.
+
+Validation: Ran mvn test in backend-java and python -m unittest discover -s tests -v in the repository root; both test suites passed.
