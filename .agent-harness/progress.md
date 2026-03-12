@@ -49,3 +49,8 @@ Validation: Ran python -m unittest discover -s tests -v and mvn test; orchestrat
 Implemented Python-side settlement coordination that maps generation results into metered usage, enforces project and user quotas, applies internal pricing, and records tenant ledger deductions.
 
 Validation: Ran python -m unittest discover -s tests -v and mvn test; settlement tests verified copy/image billing, quota consumption, and quota violation blocking before deduction.
+
+## 2026-03-12T05:11:09+00:00 - feature-011 - Implement audit logs, safety policies, and admin observability
+Implemented Java-side admin observability with admin audit events, safety policies, and safety incidents, plus Python-side generation audit records and forbidden-term safety evaluation for model outputs.
+
+Validation: Ran mvn test and python -m unittest discover -s tests -v; observability tests verified admin event recording, safety incident capture, generation summaries, charge visibility, and safety policy violation detection.
