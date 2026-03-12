@@ -341,7 +341,7 @@
         "feature-005",
         "feature-012"
       ],
-      "state": "pending",
+      "state": "in_progress",
       "created_at": "2026-03-12T07:15:00+00:00",
       "updated_at": "2026-03-12T07:15:00+00:00",
       "session_notes": [
@@ -365,7 +365,7 @@
       ],
       "state": "in_progress",
       "created_at": "2026-03-12T07:22:00+00:00",
-      "updated_at": "2026-03-12T07:22:00+00:00",
+      "updated_at": "2026-03-12T07:40:00+00:00",
       "session_notes": [
         {
           "at": "2026-03-12T07:22:00+00:00",
@@ -400,6 +400,10 @@
         {
           "at": "2026-03-12T07:22:00+00:00",
           "note": "The current tenant APIs still live in backend-java for continuity. They need to be moved into backend-tenant-service in a follow-up delivery slice, with a gateway added afterward."
+        },
+        {
+          "at": "2026-03-12T07:40:00+00:00",
+          "note": "Migrated tenant login, project, member, and quota APIs into backend-tenant-service with MyBatis XML persistence, compatibility handling for the shared PostgreSQL schema, and gateway routing for `/api/auth/**` plus `/api/tenant/**`."
         }
       ]
     }

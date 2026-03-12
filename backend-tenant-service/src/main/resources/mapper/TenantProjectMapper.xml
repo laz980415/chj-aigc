@@ -1,0 +1,21 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper
+        PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+        "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.chj.aigc.tenantservice.persistence.mapper.TenantProjectMapper">
+    <select id="listProjects" resultType="map">
+        select id as id, tenant_id as tenantId, name as name, active as active
+        from tenant_projects
+        where tenant_id = #{tenantId}
+        order by name asc
+    </select>
+
+    <insert id="upsertProject">
+        insert into tenant_projects (id, tenant_id, name, active)
+        values (#{id}, #{tenantId}, #{name}, #{active})
+        on conflict (id) do update set
+            tenant_id = excluded.tenant_id,
+            name = excluded.name,
+            active = excluded.active
+    </insert>
+</mapper>

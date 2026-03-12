@@ -1,0 +1,87 @@
+create table if not exists auth_users (
+    id varchar(64) primary key,
+    username varchar(128) not null unique,
+    password varchar(255) not null,
+    display_name varchar(128) not null,
+    role_key varchar(64) not null,
+    tenant_id varchar(64),
+    active boolean not null default true
+);
+comment on table auth_users is '登录账号表';
+comment on column auth_users.id is '账号主键';
+comment on column auth_users.username is '登录用户名';
+comment on column auth_users.password is '登录密码';
+comment on column auth_users.display_name is '显示名称';
+comment on column auth_users.role_key is '角色编码';
+comment on column auth_users.tenant_id is '所属租户标识';
+comment on column auth_users.active is '是否启用';
+
+alter table if exists auth_users add column if not exists display_name varchar(128);
+alter table if exists auth_users add column if not exists role_key varchar(64);
+alter table if exists auth_users add column if not exists tenant_id varchar(64);
+alter table if exists auth_users add column if not exists active boolean default true;
+update auth_users
+set display_name = coalesce(display_name, username),
+    role_key = coalesce(role_key, 'tenant_member'),
+    active = coalesce(active, true);
+alter table if exists auth_users alter column display_name set not null;
+alter table if exists auth_users alter column role_key set not null;
+alter table if exists auth_users alter column active set not null;
+
+create table if not exists auth_sessions (
+    token varchar(128) primary key,
+    user_id varchar(64) not null,
+    username varchar(128) not null,
+    display_name varchar(128) not null,
+    role_key varchar(64) not null,
+    tenant_id varchar(64),
+    created_at timestamp not null,
+    expires_at timestamp not null
+);
+comment on table auth_sessions is '登录会话表';
+comment on column auth_sessions.token is '会话令牌';
+comment on column auth_sessions.user_id is '账号主键';
+comment on column auth_sessions.username is '登录用户名';
+comment on column auth_sessions.display_name is '显示名称';
+comment on column auth_sessions.role_key is '角色编码';
+comment on column auth_sessions.tenant_id is '所属租户标识';
+comment on column auth_sessions.created_at is '创建时间';
+comment on column auth_sessions.expires_at is '过期时间';
+
+alter table if exists auth_sessions add column if not exists display_name varchar(128);
+alter table if exists auth_sessions add column if not exists role_key varchar(64);
+alter table if exists auth_sessions add column if not exists tenant_id varchar(64);
+
+create table if not exists tenant_projects (
+    id varchar(64) primary key,
+    tenant_id varchar(64) not null,
+    name varchar(128) not null,
+    active boolean not null default true
+);
+comment on table tenant_projects is '租户项目表';
+comment on column tenant_projects.id is '项目主键';
+comment on column tenant_projects.tenant_id is '所属租户标识';
+comment on column tenant_projects.name is '项目名称';
+comment on column tenant_projects.active is '是否启用';
+
+alter table if exists tenant_projects add column if not exists active boolean default true;
+update tenant_projects set active = coalesce(active, true);
+alter table if exists tenant_projects alter column active set not null;
+
+create table if not exists tenant_quota_allocations (
+    id varchar(64) primary key,
+    tenant_id varchar(64) not null,
+    scope_type varchar(32) not null,
+    scope_id varchar(64) not null,
+    dimension varchar(32) not null,
+    limit_value numeric(18, 4) not null,
+    used_value numeric(18, 4) not null
+);
+comment on table tenant_quota_allocations is '租户额度分配表';
+comment on column tenant_quota_allocations.id is '额度分配主键';
+comment on column tenant_quota_allocations.tenant_id is '所属租户标识';
+comment on column tenant_quota_allocations.scope_type is '额度范围类型';
+comment on column tenant_quota_allocations.scope_id is '额度范围对象标识';
+comment on column tenant_quota_allocations.dimension is '额度维度';
+comment on column tenant_quota_allocations.limit_value is '总额度上限';
+comment on column tenant_quota_allocations.used_value is '已使用额度';

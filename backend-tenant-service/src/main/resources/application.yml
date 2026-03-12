@@ -11,6 +11,19 @@ spring:
         server-addr: ${NACOS_SERVER_ADDR:127.0.0.1:8848}
         namespace: ${NACOS_NAMESPACE:public}
         group: ${NACOS_GROUP:DEFAULT_GROUP}
+  datasource:
+    url: ${TENANT_DB_URL:${APP_DB_URL:jdbc:postgresql://36.150.108.207:54312/chj-aigc}}
+    username: ${TENANT_DB_USERNAME:${APP_DB_USERNAME:postgres}}
+    password: ${TENANT_DB_PASSWORD:${APP_DB_PASSWORD:}}
+    driver-class-name: org.postgresql.Driver
+  sql:
+    init:
+      mode: always
+
+mybatis-plus:
+  mapper-locations: classpath*:mapper/*.xml
+  configuration:
+    map-underscore-to-camel-case: true
 
 management:
   endpoints:

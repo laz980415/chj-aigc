@@ -13,6 +13,14 @@ spring:
         group: ${NACOS_GROUP:DEFAULT_GROUP}
     gateway:
       routes:
+        - id: tenant-auth-api
+          uri: ${TENANT_SERVICE_URI:http://127.0.0.1:8082}
+          predicates:
+            - Path=/api/auth/**
+        - id: tenant-workspace-api
+          uri: ${TENANT_SERVICE_URI:http://127.0.0.1:8082}
+          predicates:
+            - Path=/api/tenant/**
         - id: platform-api
           uri: ${PLATFORM_SERVICE_URI:http://127.0.0.1:8080}
           predicates:

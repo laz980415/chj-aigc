@@ -11,4 +11,8 @@ public record ApiResponse<T>(
     public static <T> ApiResponse<T> success(T data) {
         return new ApiResponse<>(0, "成功", data);
     }
+
+    public static ApiResponse<Void> failure(int code, String message) {
+        return new ApiResponse<>(code, message, null);
+    }
 }

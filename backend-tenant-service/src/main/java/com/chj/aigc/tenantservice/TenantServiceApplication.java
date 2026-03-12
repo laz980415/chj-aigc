@@ -1,5 +1,6 @@
 package com.chj.aigc.tenantservice;
 
+import org.mybatis.spring.annotation.MapperScan;
 import org.springframework.boot.SpringApplication;
 import org.springframework.boot.autoconfigure.SpringBootApplication;
 import org.springframework.cloud.client.discovery.EnableDiscoveryClient;
@@ -10,6 +11,7 @@ import org.springframework.cloud.client.discovery.EnableDiscoveryClient;
  */
 @SpringBootApplication
 @EnableDiscoveryClient
+@MapperScan("com.chj.aigc.tenantservice.persistence.mapper")
 public class TenantServiceApplication {
     public static void main(String[] args) {
         SpringApplication.run(TenantServiceApplication.class, args);

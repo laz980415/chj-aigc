@@ -118,8 +118,8 @@ The Vite dev server now proxies `/api` requests to the gateway service at `http:
 Current local call path is:
 
 - `frontend-admin` -> `backend-gateway-service`
-- `backend-gateway-service` -> `backend-java`
-- later `backend-gateway-service` -> `backend-tenant-service`
+- `backend-gateway-service` -> `backend-tenant-service` for `/api/auth/**` and `/api/tenant/**`
+- `backend-gateway-service` -> `backend-java` for platform APIs under `/api/**`
 
 ## Microservice Notes
 

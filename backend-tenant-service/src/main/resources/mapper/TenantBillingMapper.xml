@@ -1,0 +1,25 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper
+        PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+        "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.chj.aigc.tenantservice.persistence.mapper.TenantBillingMapper">
+    <select id="listQuotaAllocations" resultType="map">
+        select id as id, tenant_id as tenantId, scope_type as scopeType, scope_id as scopeId,
+               dimension as dimension, limit_value as limitValue, used_value as usedValue
+        from tenant_quota_allocations
+        where tenant_id = #{tenantId}
+        order by id asc
+    </select>
+
+    <insert id="upsertQuotaAllocation" parameterType="map">
+        insert into tenant_quota_allocations (id, tenant_id, scope_type, scope_id, dimension, limit_value, used_value)
+        values (#{id}, #{tenantId}, #{scopeType}, #{scopeId}, #{dimension}, #{limitValue}, #{usedValue})
+        on conflict (id) do update set
+            tenant_id = excluded.tenant_id,
+            scope_type = excluded.scope_type,
+            scope_id = excluded.scope_id,
+            dimension = excluded.dimension,
+            limit_value = excluded.limit_value,
+            used_value = excluded.used_value
+    </insert>
+</mapper>
