@@ -4,8 +4,8 @@ Project: AIGC Advertising SaaS Platform
 
 ## Status Snapshot
 
-- Pending: 10
-- In progress: 0
+- Pending: 9
+- In progress: 1
 - Blocked: 0
 - Done: 2
 
@@ -13,7 +13,7 @@ Project: AIGC Advertising SaaS Platform
 
 - ID: feature-003
 - Title: Design unified model provider registry and capability schema
-- State: pending
+- State: in_progress
 - Description: Create the abstraction for providers, models, capabilities, status, and vendor replacement within the platform.
 - Depends on: feature-001
 - Acceptance criteria:
