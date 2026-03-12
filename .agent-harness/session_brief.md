@@ -4,22 +4,22 @@ Project: AIGC Advertising SaaS Platform
 
 ## Status Snapshot
 
-- Pending: 11
+- Pending: 10
 - In progress: 0
 - Blocked: 0
-- Done: 1
+- Done: 2
 
 ## Recommended Next Feature
 
-- ID: feature-002
-- Title: Implement identity, tenant, project, and RBAC model
+- ID: feature-003
+- Title: Design unified model provider registry and capability schema
 - State: pending
-- Description: Design and implement the core authorization model for super admins, tenant owners, project admins, and users.
+- Description: Create the abstraction for providers, models, capabilities, status, and vendor replacement within the platform.
 - Depends on: feature-001
 - Acceptance criteria:
-  - Users can belong to tenants and projects
-  - Roles support platform-level and tenant/project-level permissions
-  - Permission matrix is documented and testable
+  - Model registry supports multiple providers and multiple modalities
+  - Capability types cover text, image, and video generation
+  - Registry can map platform model aliases to vendor-specific identifiers
 
 ## Session Rules
 
