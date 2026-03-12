@@ -3,7 +3,7 @@
  * 管理后台单页入口。
  * 当前按登录角色动态渲染平台后台和租户后台，覆盖充值、模型策略、项目、成员、客户和素材等核心能力。
  */
-import { computed, onMounted, reactive, ref } from "vue";
+import { computed, onBeforeUnmount, onMounted, reactive, ref } from "vue";
 
 type SummaryPayload = {
   policies: number;
@@ -105,6 +105,7 @@ const loading = ref(true);
 const error = ref("");
 const success = ref("");
 const isAuthenticated = ref(false);
+const currentPath = ref(window.location.pathname || "/");
 
 const healthStatus = ref("加载中");
 const dbInfo = ref<DbInfoPayload | null>(null);
@@ -121,6 +122,7 @@ const session = ref<SessionPayload | null>(null);
 const users = ref<UserPayload[]>([]);
 const members = ref<UserPayload[]>([]);
 const roles = ref<string[]>([]);
+const memberRoleDrafts = reactive<Record<string, string>>({});
 
 const loginForm = reactive({
   username: "admin",
@@ -200,6 +202,7 @@ const canViewTenantWorkspace = computed(() => ["tenant_owner", "tenant_member"].
 const canManageTenantWorkspace = computed(() => currentRole.value === "tenant_owner");
 const canRechargeTenant = computed(() => ["platform_super_admin", "tenant_owner"].includes(currentRole.value));
 const workspaceTitle = computed(() => isPlatformAdmin.value ? "平台后台" : "租户后台");
+const showLoginView = computed(() => !isAuthenticated.value || currentPath.value === "/login");
 const workspaceCopy = computed(() => isPlatformAdmin.value
   ? "平台侧只管理租户开通、租户充值、模型权限和租户级别运营配置。"
   : "租户侧负责项目、成员、客户、品牌和素材等日常运营动作。");
@@ -300,6 +303,7 @@ async function loadDashboard() {
     assets.value = assetPayload;
   }
 
+  syncMemberRoleDrafts();
   syncQuotaScope();
   loading.value = false;
 }
@@ -341,6 +345,7 @@ async function login() {
   localStorage.setItem("chj_aigc_token", payload.token);
   session.value = payload;
   isAuthenticated.value = true;
+  navigate("/workspace");
   success.value = `欢迎，${payload.displayName}`;
   await loadDashboard();
 }
@@ -351,6 +356,7 @@ async function bootstrap() {
   if (!token) {
     loading.value = false;
     isAuthenticated.value = false;
+    navigate("/login", true);
     return;
   }
 
@@ -361,11 +367,13 @@ async function bootstrap() {
       token,
     };
     isAuthenticated.value = true;
+    navigate(currentPath.value === "/login" ? "/workspace" : currentPath.value, true);
     await loadDashboard();
   } catch {
     localStorage.removeItem("chj_aigc_token");
     isAuthenticated.value = false;
     loading.value = false;
+    navigate("/login", true);
   }
 }
 
@@ -374,6 +382,7 @@ function logout() {
   session.value = null;
   isAuthenticated.value = false;
   success.value = "";
+  navigate("/login");
 }
 
 function quotaScopeLabel(allocation: QuotaAllocationPayload) {
@@ -505,6 +514,21 @@ async function updateMemberStatus(member: UserPayload, active: boolean) {
   await loadDashboard();
 }
 
+// 租户负责人调整成员角色，限制在租户负责人与租户成员之间切换。
+async function updateMemberRole(member: UserPayload) {
+  success.value = "";
+  error.value = "";
+  await fetchJson<UserPayload>(`/api/tenant/members/${member.id}/role`, {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json",
+    },
+    body: JSON.stringify({ roleKey: memberRoleDrafts[member.id] ?? member.roleKey }),
+  });
+  success.value = `成员 ${member.displayName} 角色已更新`;
+  await loadDashboard();
+}
+
 // 租户负责人创建品牌。
 async function createBrand() {
   success.value = "";
@@ -541,14 +565,41 @@ function syncQuotaScope() {
   }
 }
 
+function syncMemberRoleDrafts() {
+  Object.keys(memberRoleDrafts).forEach((key) => {
+    delete memberRoleDrafts[key];
+  });
+  members.value.forEach((member) => {
+    memberRoleDrafts[member.id] = member.roleKey;
+  });
+}
+
+function navigate(path: string, replace = false) {
+  if (replace) {
+    window.history.replaceState({}, "", path);
+  } else if (window.location.pathname !== path) {
+    window.history.pushState({}, "", path);
+  }
+  currentPath.value = window.location.pathname;
+}
+
+function handlePopState() {
+  currentPath.value = window.location.pathname;
+}
+
 onMounted(() => {
+  window.addEventListener("popstate", handlePopState);
   runAction(bootstrap);
+});
+
+onBeforeUnmount(() => {
+  window.removeEventListener("popstate", handlePopState);
 });
 </script>
 
 <template>
   <div class="page-shell">
-    <section v-if="!isAuthenticated" class="login-panel">
+    <section v-if="showLoginView" class="login-panel">
       <div class="login-card">
         <p class="eyebrow">CHJ AIGC</p>
         <h1>后台登录</h1>
@@ -593,8 +644,17 @@ onMounted(() => {
       </div>
     </header>
 
+    <nav class="workspace-nav">
+      <a class="nav-pill" href="#overview">总览</a>
+      <a v-if="isPlatformAdmin" class="nav-pill" href="#accounts">账号</a>
+      <a v-if="isPlatformAdmin" class="nav-pill" href="#policies">模型策略</a>
+      <a class="nav-pill" href="#finance">{{ isPlatformAdmin ? "租户充值" : "钱包额度" }}</a>
+      <a v-if="canViewTenantWorkspace" class="nav-pill" href="#members">项目成员</a>
+      <a v-if="canViewTenantWorkspace" class="nav-pill" href="#assets">客户素材</a>
+    </nav>
+
     <main class="dashboard-grid">
-      <section class="panel panel-wide">
+      <section id="overview" class="panel panel-wide">
         <div class="panel-head">
           <div>
             <p class="panel-label">{{ isPlatformAdmin ? "平台总览" : "租户总览" }}</p>
@@ -645,7 +705,7 @@ onMounted(() => {
         </div>
       </section>
 
-      <section v-if="isPlatformAdmin" class="panel">
+      <section v-if="isPlatformAdmin" id="accounts" class="panel">
         <div class="panel-head">
           <div>
             <p class="panel-label">账号管理</p>
@@ -689,7 +749,7 @@ onMounted(() => {
         </div>
       </section>
 
-      <section v-if="isPlatformAdmin" class="panel">
+      <section v-if="isPlatformAdmin" id="policies" class="panel">
         <div class="panel-head">
           <div>
             <p class="panel-label">超管</p>
@@ -739,7 +799,7 @@ onMounted(() => {
         </div>
       </section>
 
-      <section class="panel">
+      <section id="finance" class="panel">
         <div class="panel-head">
           <div>
             <p class="panel-label">{{ isPlatformAdmin ? "平台侧租户运营" : "租户资金" }}</p>
@@ -814,7 +874,7 @@ onMounted(() => {
         </div>
       </section>
 
-      <section v-if="canViewTenantWorkspace" class="panel">
+      <section v-if="canViewTenantWorkspace" id="members" class="panel">
         <div class="panel-head">
           <div>
             <p class="panel-label">租户协作</p>
@@ -849,6 +909,22 @@ onMounted(() => {
                 <strong>{{ member.displayName }}</strong>
                 <div class="subtext">{{ member.roleKey }} · {{ member.username }} · {{ member.active ? "启用" : "停用" }}</div>
                 <div v-if="canManageTenantWorkspace" class="inline-actions">
+                  <select
+                    v-model="memberRoleDrafts[member.id]"
+                    class="member-role-select"
+                    :disabled="session?.userId === member.id"
+                  >
+                    <option value="tenant_owner">租户负责人</option>
+                    <option value="tenant_member">租户成员</option>
+                  </select>
+                  <button
+                    class="tiny-button"
+                    type="button"
+                    :disabled="session?.userId === member.id || memberRoleDrafts[member.id] === member.roleKey"
+                    @click="runAction(() => updateMemberRole(member))"
+                  >
+                    保存角色
+                  </button>
                   <button
                     class="tiny-button"
                     type="button"
@@ -883,7 +959,7 @@ onMounted(() => {
         </div>
       </section>
 
-      <section v-if="canViewTenantWorkspace" class="panel">
+      <section v-if="canViewTenantWorkspace" id="assets" class="panel">
         <div class="panel-head">
           <div>
             <p class="panel-label">租户品牌资产</p>

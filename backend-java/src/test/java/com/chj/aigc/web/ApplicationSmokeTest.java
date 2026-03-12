@@ -422,6 +422,45 @@ class ApplicationSmokeTest {
     }
 
     @Test
+    void tenantOwnerCanChangeMemberRole() throws Exception {
+        String ownerToken = loginAsTenantOwner();
+
+        mockMvc.perform(post("/api/tenant/members")
+                        .header("X-Auth-Token", ownerToken)
+                        .contentType("application/json")
+                        .content("""
+                                {
+                                  "userId": "user-role-member-1",
+                                  "username": "tenant_member_role_1",
+                                  "password": "Member@123",
+                                  "displayName": "角色测试成员",
+                                  "roleKey": "tenant_member"
+                                }
+                                """))
+                .andExpect(status().isOk());
+
+        mockMvc.perform(post("/api/tenant/members/user-role-member-1/role")
+                        .header("X-Auth-Token", ownerToken)
+                        .contentType("application/json")
+                        .content("""
+                                {
+                                  "roleKey": "tenant_owner"
+                                }
+                                """))
+                .andExpect(status().isOk());
+
+        MvcResult membersResult = mockMvc.perform(get("/api/tenant/members")
+                        .header("X-Auth-Token", ownerToken))
+                .andExpect(status().isOk())
+                .andReturn();
+        List<Map<String, Object>> members = readData(membersResult, new TypeReference<>() {
+        });
+        assertTrue(members.stream()
+                .filter(member -> "user-role-member-1".equals(member.get("id")))
+                .anyMatch(member -> "tenant_owner".equals(member.get("roleKey"))));
+    }
+
+    @Test
     void tenantOwnerCannotAccessAdminApi() throws Exception {
         String token = loginAsTenantOwner();
 
@@ -471,6 +510,16 @@ class ApplicationSmokeTest {
                         .content("""
                                 {
                                   "active": false
+                                }
+                                """))
+                .andExpect(status().isForbidden());
+
+        mockMvc.perform(post("/api/tenant/members/user-demo/role")
+                        .header("X-Auth-Token", token)
+                        .contentType("application/json")
+                        .content("""
+                                {
+                                  "roleKey": "tenant_owner"
                                 }
                                 """))
                 .andExpect(status().isForbidden());

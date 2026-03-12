@@ -134,6 +134,34 @@ public final class AuthService {
         return updated;
     }
 
+    /**
+     * 调整租户成员角色，只允许在 tenant_owner 和 tenant_member 之间切换。
+     */
+    public AuthUser updateTenantUserRole(String userId, String tenantId, String roleKey) {
+        if (!List.of("tenant_owner", "tenant_member").contains(roleKey)) {
+            throw new IllegalArgumentException("租户成员角色只允许 tenant_owner 或 tenant_member");
+        }
+        AuthUser existing = authStore.findUserById(userId)
+                .orElseThrow(() -> new IllegalArgumentException("成员不存在"));
+        if (!tenantId.equals(existing.tenantId())) {
+            throw new IllegalArgumentException("只能修改当前租户下的成员");
+        }
+        if (!List.of("tenant_owner", "tenant_member").contains(existing.roleKey())) {
+            throw new IllegalArgumentException("只能修改租户成员角色");
+        }
+        AuthUser updated = new AuthUser(
+                existing.id(),
+                existing.username(),
+                existing.password(),
+                existing.displayName(),
+                roleKey,
+                existing.tenantId(),
+                existing.active()
+        );
+        authStore.saveUser(updated);
+        return updated;
+    }
+
     public List<String> builtinRoles() {
         return List.of(
                 "platform_super_admin",

@@ -21,6 +21,7 @@ import com.chj.aigc.web.dto.CreateBrandRequest;
 import com.chj.aigc.web.dto.CreateClientRequest;
 import com.chj.aigc.web.dto.CreateTenantMemberRequest;
 import com.chj.aigc.web.dto.RechargeRequest;
+import com.chj.aigc.web.dto.UpdateTenantMemberRoleRequest;
 import com.chj.aigc.web.dto.UpdateTenantMemberStatusRequest;
 import com.chj.aigc.web.dto.UpsertQuotaRequest;
 import jakarta.servlet.http.HttpServletRequest;
@@ -166,6 +167,21 @@ public class TenantApiController {
             throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "不能停用当前登录的租户负责人");
         }
         AuthUser user = authService.updateTenantUserStatus(userId, resolveTenantId(httpRequest), request.active());
+        return ApiResponse.success(serializeUser(user));
+    }
+
+    @PostMapping("/members/{userId}/role")
+    public ApiResponse<Map<String, Object>> updateMemberRole(
+            @PathVariable String userId,
+            @RequestBody UpdateTenantMemberRoleRequest request,
+            HttpServletRequest httpRequest
+    ) {
+        requireAnyRole(httpRequest, "tenant_owner");
+        AuthSession session = currentSession(httpRequest);
+        if (session != null && session.userId().equals(userId)) {
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "不能修改当前登录账号的角色");
+        }
+        AuthUser user = authService.updateTenantUserRole(userId, resolveTenantId(httpRequest), request.roleKey());
         return ApiResponse.success(serializeUser(user));
     }
 
