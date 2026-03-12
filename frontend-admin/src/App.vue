@@ -80,6 +80,23 @@ type TenantOverviewPayload = {
   ledgerCount: number;
 };
 
+type LedgerEntryPayload = {
+  id: string;
+  tenantId: string;
+  entryType: string;
+  amount: string;
+  description: string;
+  referenceId: string;
+  createdAt: string;
+};
+
+type TenantDetailPayload = {
+  tenant: TenantOverviewPayload;
+  members: UserPayload[];
+  rules: RulePayload[];
+  ledgerEntries: LedgerEntryPayload[];
+};
+
 type DbInfoPayload = {
   url: string;
   username: string;
@@ -136,6 +153,8 @@ const dbInfo = ref<DbInfoPayload | null>(null);
 const summary = ref<SummaryPayload>({ policies: 0, auditEvents: 0, users: 0 });
 const rules = ref<RulePayload[]>([]);
 const tenants = ref<TenantOverviewPayload[]>([]);
+const selectedTenantId = ref("tenant-demo");
+const tenantDetail = ref<TenantDetailPayload | null>(null);
 const wallet = ref<WalletPayload>({ tenantId: "tenant-demo", balance: "0", ledgerCount: 0 });
 const quotas = ref<QuotaPayload>({ projectImageRemaining: "0", userTokenRemaining: "0" });
 const quotaAllocations = ref<QuotaAllocationPayload[]>([]);
@@ -295,6 +314,7 @@ const workspaceMenus = computed<WorkspaceMenu[]>(() => isPlatformAdmin.value
 const activeMenu = computed(() => workspaceMenus.value.find((menu) => menu.key === activeMenuKey.value) ?? workspaceMenus.value[0] ?? null);
 const activeTabs = computed(() => activeMenu.value?.tabs ?? []);
 const activeTab = computed(() => activeTabs.value.find((tab) => tab.key === activeTabKey.value) ?? activeTabs.value[0] ?? null);
+const tenantRuleCount = computed(() => tenantDetail.value?.rules.length ?? 0);
 
 // 统一附带令牌访问 API，失败时直接抛错交给页面底部状态栏展示。
 async function fetchJson<T>(url: string, init?: RequestInit): Promise<T> {
@@ -336,6 +356,7 @@ async function loadDashboard() {
   members.value = [];
   rules.value = [];
   tenants.value = [];
+  tenantDetail.value = null;
   wallet.value = { tenantId: "tenant-demo", balance: "0", ledgerCount: 0 };
   quotas.value = { projectImageRemaining: "0", userTokenRemaining: "0" };
   quotaAllocations.value = [];
@@ -367,6 +388,12 @@ async function loadDashboard() {
     rules.value = rulePayload;
     wallet.value = walletPayload;
     tenants.value = tenantPayload;
+    if (tenantPayload.length > 0) {
+      selectedTenantId.value = tenantPayload.some((tenant) => tenant.tenantId === selectedTenantId.value)
+        ? selectedTenantId.value
+        : tenantPayload[0]!.tenantId;
+      await loadTenantDetail(selectedTenantId.value);
+    }
   }
 
   if (canViewTenantWorkspace.value) {
@@ -394,6 +421,12 @@ async function loadDashboard() {
   syncQuotaScope();
   syncWorkspaceNavigation();
   loading.value = false;
+}
+
+// 平台超管加载单个租户详情，查看成员、模型策略和钱包流水。
+async function loadTenantDetail(tenantId: string) {
+  selectedTenantId.value = tenantId;
+  tenantDetail.value = await fetchJson<TenantDetailPayload>(`/api/admin/tenants/${tenantId}`);
 }
 
 // 平台超管创建任意账号。
@@ -688,6 +721,12 @@ function selectTab(tabKey: string) {
   activeTabKey.value = tabKey;
 }
 
+function tenantCardClass(tenantId: string) {
+  return {
+    active: selectedTenantId.value === tenantId,
+  };
+}
+
 function navigate(path: string, replace = false) {
   if (replace) {
     window.history.replaceState({}, "", path);
@@ -870,11 +909,120 @@ onBeforeUnmount(() => {
               </div>
             </div>
             <div class="tenant-grid">
-              <article v-for="tenant in tenants" :key="tenant.tenantId" class="stat-card tenant-card">
+              <article
+                v-for="tenant in tenants"
+                :key="tenant.tenantId"
+                class="stat-card tenant-card"
+                :class="tenantCardClass(tenant.tenantId)"
+                @click="runAction(() => loadTenantDetail(tenant.tenantId))"
+              >
                 <span>{{ tenant.displayName }}</span>
                 <strong>{{ tenant.walletBalance }}</strong>
                 <div class="subtext">成员 {{ tenant.memberCount }} · 负责人 {{ tenant.ownerCount }} · 启用 {{ tenant.activeMemberCount }}</div>
               </article>
+            </div>
+            <div v-if="tenantDetail" class="tenant-detail-grid">
+              <section class="panel detail-panel">
+                <div class="panel-head">
+                  <div>
+                    <p class="panel-label">租户详情</p>
+                    <h3>{{ tenantDetail.tenant.displayName }}</h3>
+                  </div>
+                </div>
+                <div class="quota-strip">
+                  <div class="mini-stat">
+                    <span>成员数量</span>
+                    <strong>{{ tenantDetail.tenant.memberCount }}</strong>
+                  </div>
+                  <div class="mini-stat">
+                    <span>负责人数量</span>
+                    <strong>{{ tenantDetail.tenant.ownerCount }}</strong>
+                  </div>
+                  <div class="mini-stat">
+                    <span>启用成员</span>
+                    <strong>{{ tenantDetail.tenant.activeMemberCount }}</strong>
+                  </div>
+                  <div class="mini-stat">
+                    <span>策略数量</span>
+                    <strong>{{ tenantRuleCount }}</strong>
+                  </div>
+                </div>
+              </section>
+
+              <section class="panel detail-panel">
+                <div class="panel-head">
+                  <div>
+                    <p class="panel-label">租户成员</p>
+                    <h3>成员清单</h3>
+                  </div>
+                </div>
+                <ul class="card-list compact-list">
+                  <li v-for="member in tenantDetail.members" :key="member.id">
+                    <strong>{{ member.displayName }}</strong>
+                    <div class="subtext">{{ member.roleKey }} · {{ member.username }} · {{ member.active ? "启用" : "停用" }}</div>
+                  </li>
+                </ul>
+              </section>
+
+              <section class="panel detail-panel">
+                <div class="panel-head">
+                  <div>
+                    <p class="panel-label">租户策略</p>
+                    <h3>模型权限</h3>
+                  </div>
+                </div>
+                <div class="table-wrap">
+                  <table>
+                    <thead>
+                      <tr>
+                        <th>规则 ID</th>
+                        <th>模型</th>
+                        <th>效果</th>
+                        <th>说明</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      <tr v-for="rule in tenantDetail.rules" :key="rule.id">
+                        <td>{{ rule.id }}</td>
+                        <td>{{ rule.platformModelAlias }}</td>
+                        <td>{{ rule.effect }}</td>
+                        <td>{{ rule.scope.type }}:{{ rule.scope.value }}</td>
+                      </tr>
+                    </tbody>
+                  </table>
+                </div>
+              </section>
+
+              <section class="panel detail-panel">
+                <div class="panel-head">
+                  <div>
+                    <p class="panel-label">租户流水</p>
+                    <h3>充值与扣费记录</h3>
+                  </div>
+                </div>
+                <div class="table-wrap">
+                  <table>
+                    <thead>
+                      <tr>
+                        <th>流水 ID</th>
+                        <th>类型</th>
+                        <th>金额</th>
+                        <th>说明</th>
+                        <th>引用</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      <tr v-for="entry in tenantDetail.ledgerEntries" :key="entry.id">
+                        <td>{{ entry.id }}</td>
+                        <td>{{ entry.entryType }}</td>
+                        <td>{{ entry.amount }}</td>
+                        <td>{{ entry.description }}</td>
+                        <td>{{ entry.referenceId }}</td>
+                      </tr>
+                    </tbody>
+                  </table>
+                </div>
+              </section>
             </div>
           </section>
 

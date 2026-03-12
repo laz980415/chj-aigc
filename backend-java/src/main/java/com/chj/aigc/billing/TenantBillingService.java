@@ -51,6 +51,25 @@ public final class TenantBillingService {
     }
 
     /**
+     * 返回租户钱包流水明细，供平台超管查看充值与扣费记录。
+     */
+    public List<Map<String, Object>> ledgerEntries(String tenantId) {
+        return store.listLedgerEntries(tenantId).stream()
+                .map(entry -> {
+                    Map<String, Object> payload = new LinkedHashMap<>();
+                    payload.put("id", entry.id());
+                    payload.put("tenantId", entry.tenantId());
+                    payload.put("entryType", entry.type().name());
+                    payload.put("amount", entry.amount().amount().toPlainString());
+                    payload.put("description", entry.description());
+                    payload.put("referenceId", entry.referenceId());
+                    payload.put("createdAt", entry.createdAt());
+                    return payload;
+                })
+                .toList();
+    }
+
+    /**
      * 返回租户下全部额度分配，供页面展示项目额度和成员额度明细。
      */
     public List<QuotaAllocation> listQuotaAllocations(String tenantId) {

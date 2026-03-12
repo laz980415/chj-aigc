@@ -238,6 +238,23 @@ class ApplicationSmokeTest {
     }
 
     @Test
+    void adminCanViewTenantDetail() throws Exception {
+        String token = loginAsAdmin();
+
+        MvcResult result = mockMvc.perform(get("/api/admin/tenants/tenant-demo")
+                        .header("X-Auth-Token", token))
+                .andExpect(status().isOk())
+                .andReturn();
+
+        Map<String, Object> detail = readData(result, new TypeReference<>() {
+        });
+        assertTrue(detail.containsKey("tenant"));
+        assertTrue(detail.containsKey("members"));
+        assertTrue(detail.containsKey("rules"));
+        assertTrue(detail.containsKey("ledgerEntries"));
+    }
+
+    @Test
     void tenantCanCreateClientAndBrand() throws Exception {
         String token = loginAsTenantOwner();
 

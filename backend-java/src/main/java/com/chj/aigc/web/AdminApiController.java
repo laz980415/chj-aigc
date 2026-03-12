@@ -16,6 +16,7 @@ import java.util.ArrayList;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
+import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
@@ -97,6 +98,24 @@ public class AdminApiController {
         List<Map<String, Object>> payload = tenantUsers.entrySet().stream()
                 .map(entry -> serializeTenant(entry.getKey(), entry.getValue()))
                 .toList();
+        return ApiResponse.success(payload);
+    }
+
+    /**
+     * 返回单个租户详情。
+     * 平台超管只查看租户级信息，包括成员摘要、模型策略和钱包流水，不下钻项目内部结构。
+     */
+    @GetMapping("/tenants/{tenantId}")
+    public ApiResponse<Map<String, Object>> tenantDetail(@PathVariable String tenantId) {
+        List<AuthUser> tenantUsers = authService.listTenantUsers(tenantId);
+        Map<String, Object> payload = new LinkedHashMap<>();
+        payload.put("tenant", serializeTenant(tenantId, tenantUsers));
+        payload.put("members", tenantUsers.stream().map(this::serializeUser).toList());
+        payload.put("rules", store.listRules().stream()
+                .filter(rule -> rule.scope().type() == AccessScopeType.TENANT)
+                .filter(rule -> tenantId.equals(rule.scope().value()))
+                .toList());
+        payload.put("ledgerEntries", tenantBillingService.ledgerEntries(tenantId));
         return ApiResponse.success(payload);
     }
 

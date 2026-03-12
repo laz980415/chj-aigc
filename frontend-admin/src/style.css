@@ -349,7 +349,8 @@ select {
 .form-grid,
 .quota-strip,
 .assets-layout,
-.tenant-grid {
+.tenant-grid,
+.tenant-detail-grid {
   display: grid;
   gap: 14px;
 }
@@ -360,6 +361,11 @@ select {
 
 .tenant-grid {
   grid-template-columns: repeat(3, minmax(0, 1fr));
+}
+
+.tenant-detail-grid {
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  margin-top: 18px;
 }
 
 .form-grid {
@@ -504,6 +510,20 @@ th {
 
 .tenant-card {
   min-height: 156px;
+  cursor: pointer;
+}
+
+.tenant-card.active {
+  border-color: rgba(221, 115, 64, 0.5);
+  box-shadow: 0 22px 46px rgba(221, 115, 64, 0.16);
+}
+
+.detail-panel {
+  min-height: 100%;
+}
+
+.compact-list {
+  margin-top: 0;
 }
 
 .footer-bar {
@@ -534,7 +554,8 @@ th {
   .form-grid,
   .quota-strip,
   .assets-layout,
-  .tenant-grid {
+  .tenant-grid,
+  .tenant-detail-grid {
     grid-template-columns: 1fr;
   }
 
