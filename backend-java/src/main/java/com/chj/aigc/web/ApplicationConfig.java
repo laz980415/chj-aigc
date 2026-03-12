@@ -9,6 +9,10 @@ import com.chj.aigc.access.ModelAccessPolicyEngine;
 import com.chj.aigc.access.ModelAccessAdminStore;
 import com.chj.aigc.access.InMemoryModelAccessAdminStore;
 import com.chj.aigc.access.JdbcModelAccessAdminStore;
+import com.chj.aigc.billing.InMemoryTenantBillingStore;
+import com.chj.aigc.billing.JdbcTenantBillingStore;
+import com.chj.aigc.billing.TenantBillingService;
+import com.chj.aigc.billing.TenantBillingStore;
 import org.springframework.beans.factory.ObjectProvider;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
@@ -45,6 +49,20 @@ public class ApplicationConfig {
     @Bean
     public AuthService authService(AuthStore authStore) {
         return new AuthService(authStore);
+    }
+
+    @Bean
+    public TenantBillingStore tenantBillingStore(ObjectProvider<JdbcTemplate> jdbcTemplateProvider) {
+        JdbcTemplate jdbcTemplate = jdbcTemplateProvider.getIfAvailable();
+        if (jdbcTemplate != null) {
+            return new JdbcTenantBillingStore(jdbcTemplate);
+        }
+        return new InMemoryTenantBillingStore();
+    }
+
+    @Bean
+    public TenantBillingService tenantBillingService(TenantBillingStore tenantBillingStore) {
+        return new TenantBillingService(tenantBillingStore);
     }
 
     @Bean

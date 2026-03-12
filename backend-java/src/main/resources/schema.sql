@@ -41,3 +41,23 @@ create table if not exists auth_sessions (
     created_at timestamp with time zone not null,
     expires_at timestamp with time zone not null
 );
+
+create table if not exists tenant_wallet_ledger (
+    id varchar(128) primary key,
+    tenant_id varchar(128) not null,
+    entry_type varchar(32) not null,
+    amount numeric(18, 4) not null,
+    description text not null,
+    reference_id varchar(128) not null,
+    created_at timestamp with time zone not null
+);
+
+create table if not exists tenant_quota_allocations (
+    id varchar(128) primary key,
+    tenant_id varchar(128) not null,
+    scope_type varchar(32) not null,
+    scope_id varchar(128) not null,
+    dimension varchar(32) not null,
+    limit_value numeric(18, 4) not null,
+    used_value numeric(18, 4) not null
+);
