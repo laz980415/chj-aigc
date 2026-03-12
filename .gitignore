@@ -2,3 +2,6 @@ __pycache__/
 *.py[cod]
 target/
 *.lnk
+.idea/
+node_modules/
+dist/

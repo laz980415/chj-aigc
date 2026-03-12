@@ -62,6 +62,24 @@ Set-Location backend-java
 mvn test
 ```
 
+## Run Frontend
+
+The admin console now uses Vue 3 with a separate Vite dev server in `frontend-admin`.
+
+```powershell
+Set-Location frontend-admin
+npm install
+npm run dev
+```
+
+Open:
+
+```text
+http://127.0.0.1:5173
+```
+
+The Vite dev server proxies `/api` requests to the Spring Boot backend at `http://127.0.0.1:8080`.
+
 The core idea is simple:
 
 - An initializer step creates durable project artifacts.
