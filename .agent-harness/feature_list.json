@@ -420,6 +420,10 @@
         {
           "at": "2026-03-12T08:22:00+00:00",
           "note": "Removed `/api/auth/**` and `/api/tenant/**` controllers from backend-java so platform service no longer serves tenant workspace or login APIs directly. The unified frontend entry now depends on gateway routing those paths to backend-tenant-service."
+        },
+        {
+          "at": "2026-03-12T08:40:00+00:00",
+          "note": "Prepared PostgreSQL split-database configuration by separating platform schema ownership, adding create-microservice-databases.sql, and documenting the remaining auth-table dependency that still blocks a full physical split."
         }
       ]
     },
@@ -443,6 +447,29 @@
         {
           "at": "2026-03-12T07:55:00+00:00",
           "note": "User requires all services except PostgreSQL to support container deployment later. Add Dockerfiles and a unified compose stack after the core microservice split is stable."
+        }
+      ]
+    },
+    {
+      "id": "feature-017",
+      "title": "Split identity storage away from platform direct database reads",
+      "description": "Remove the remaining direct dependency on auth_users and auth_sessions across platform and tenant services so PostgreSQL can be physically split into chj-aigc-platform and chj-aigc-tenant without shared tables.",
+      "acceptance_criteria": [
+        "Platform service no longer queries tenant-owned auth tables directly",
+        "Tenant member and tenant summary data can be obtained through a service contract or a dedicated identity service",
+        "Platform and tenant services can run on separate PostgreSQL databases without duplicated auth writes"
+      ],
+      "depends_on": [
+        "feature-014",
+        "feature-015"
+      ],
+      "state": "pending",
+      "created_at": "2026-03-12T08:40:00+00:00",
+      "updated_at": "2026-03-12T08:40:00+00:00",
+      "session_notes": [
+        {
+          "at": "2026-03-12T08:40:00+00:00",
+          "note": "Physical PostgreSQL split is not complete yet because both platform and tenant flows still depend on auth_users and auth_sessions. Add a dedicated identity ownership step before switching both services to separate databases."
         }
       ]
     }

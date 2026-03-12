@@ -11,6 +11,7 @@ For this project direction:
 - Java is the primary language for business backend services.
 - Python is used for model-provider integration and AI orchestration.
 - Java backend is moving to a Spring Cloud Alibaba microservice architecture with Nacos discovery.
+- PostgreSQL is being prepared for split databases on the same instance.
 
 ## Backend Status
 
@@ -59,6 +60,12 @@ Optional environment variables:
 - `APP_DB_URL`
 - `APP_DB_USERNAME`
 - `APP_DB_PASSWORD`
+- `PLATFORM_DB_URL`
+- `PLATFORM_DB_USERNAME`
+- `PLATFORM_DB_PASSWORD`
+- `TENANT_DB_URL`
+- `TENANT_DB_USERNAME`
+- `TENANT_DB_PASSWORD`
 - `NACOS_DISCOVERY_ENABLED`
 - `NACOS_SERVER_ADDR`
 - `NACOS_NAMESPACE`
@@ -154,6 +161,8 @@ Recommended next databases on the same PostgreSQL server are:
 
 - `chj-aigc-platform`
 - `chj-aigc-tenant`
+
+The database split notes are documented in [database-split-plan.md](/e:/ai-workspaces/docs/database-split-plan.md).
 
 The core idea is simple:
 

@@ -135,6 +135,17 @@ Set-Location E:\ai-workspaces\infra\nacos
 
 也就是说，前端开发环境已经统一走网关，并且租户登录、项目、成员、额度接口会优先进租户服务。
 平台服务已经移除 `/api/auth/**` 和 `/api/tenant/**` 控制器，只保留超管平台能力。
+
+## 分库准备
+
+当前已经开始为 PostgreSQL 分库做准备：
+
+- 平台服务支持 `PLATFORM_DB_URL / PLATFORM_DB_USERNAME / PLATFORM_DB_PASSWORD`
+- 租户服务支持 `TENANT_DB_URL / TENANT_DB_USERNAME / TENANT_DB_PASSWORD`
+- 建库 SQL 在 [create-microservice-databases.sql](/e:/ai-workspaces/infra/sql/create-microservice-databases.sql)
+- 详细拆分说明在 [database-split-plan.md](/e:/ai-workspaces/docs/database-split-plan.md)
+
+现阶段平台服务的 `schema.sql` 已经只保留平台侧仍然依赖的表，不再创建项目、额度、客户、品牌、素材这些租户工作台表。
 为了兼容联调和逐步迁移，仍保留显式实验入口：
 
 - `/tenant-api/**` -> `backend-tenant-service`

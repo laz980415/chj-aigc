@@ -5,6 +5,9 @@ param(
     [string]$NacosServer = "127.0.0.1:8848"
 )
 
+$env:TENANT_DB_URL = $DbUrl
+$env:TENANT_DB_USERNAME = $DbUsername
+$env:TENANT_DB_PASSWORD = $DbPassword
 $env:APP_DB_URL = $DbUrl
 $env:APP_DB_USERNAME = $DbUsername
 $env:APP_DB_PASSWORD = $DbPassword
