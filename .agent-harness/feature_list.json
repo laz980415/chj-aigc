@@ -222,13 +222,17 @@
         "feature-006",
         "feature-008"
       ],
-      "state": "in_progress",
+      "state": "done",
       "created_at": "2026-03-12T04:30:00+00:00",
-      "updated_at": "2026-03-12T05:04:12+00:00",
+      "updated_at": "2026-03-12T05:05:03+00:00",
       "session_notes": [
         {
           "at": "2026-03-12T05:04:12+00:00",
           "note": "Starting Python-side generation job orchestration for copy, image, and video."
+        },
+        {
+          "at": "2026-03-12T05:05:03+00:00",
+          "note": "Implemented Python-side generation orchestration with model-route resolution, grounded prompt assembly, provider invocation payload construction, synchronous copy and image dispatch, and asynchronous video job lifecycle handling."
         }
       ]
     },
@@ -246,10 +250,19 @@
         "feature-005",
         "feature-009"
       ],
-      "state": "pending",
+      "state": "done",
       "created_at": "2026-03-12T04:30:00+00:00",
-      "updated_at": "2026-03-12T04:30:00+00:00",
-      "session_notes": []
+      "updated_at": "2026-03-12T05:08:00+00:00",
+      "session_notes": [
+        {
+          "at": "2026-03-12T05:06:43+00:00",
+          "note": "Starting usage settlement and quota enforcement flow."
+        },
+        {
+          "at": "2026-03-12T05:08:00+00:00",
+          "note": "Implemented Python-side settlement coordination that maps generation results into metered usage, enforces project and user quotas, applies internal pricing, and records tenant ledger deductions."
+        }
+      ]
     },
     {
       "id": "feature-011",

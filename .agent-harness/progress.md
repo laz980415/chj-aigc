@@ -39,3 +39,13 @@ Implemented the Java asset-library domain with clients, brands, brand rules, ass
 Implemented Python-side grounded prompt assembly with brand context, structured brand rules, referenced assets, generation intent, and audit metadata for traceable prompt construction.
 
 Validation: Ran python -m unittest discover -s tests -v and mvn test; grounding tests verified brand-rule injection, asset references, and asset count limiting for traceability.
+
+## 2026-03-12T05:05:03+00:00 - feature-009 - Implement generation job orchestration for copy, image, and video
+Implemented Python-side generation orchestration with model-route resolution, grounded prompt assembly, provider invocation payload construction, synchronous copy and image dispatch, and asynchronous video job lifecycle handling.
+
+Validation: Ran python -m unittest discover -s tests -v and mvn test; orchestration tests verified sync copy/image results, async video pending/completion flow, and grounded provider invocation payloads.
+
+## 2026-03-12T05:08:00+00:00 - feature-010 - Implement usage deduction, settlement, and quota enforcement
+Implemented Python-side settlement coordination that maps generation results into metered usage, enforces project and user quotas, applies internal pricing, and records tenant ledger deductions.
+
+Validation: Ran python -m unittest discover -s tests -v and mvn test; settlement tests verified copy/image billing, quota consumption, and quota violation blocking before deduction.
