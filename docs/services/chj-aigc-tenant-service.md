@@ -9,7 +9,6 @@
 
 当前已经落地的职责包括：
 
-- 租户登录入口
 - 租户项目管理
 - 租户成员管理
 - 项目/成员额度分配
@@ -35,8 +34,6 @@
 
 当前主要接口包括：
 
-- `POST /api/auth/login`
-- `GET /api/auth/me`
 - `GET /api/tenant/projects`
 - `POST /api/tenant/projects`
 - `GET /api/tenant/members`
@@ -119,6 +116,6 @@ Set-Location E:\ai-workspaces\infra\dev
 
 ## 10. 当前已知限制
 
-- 登录和会话目前还在租户服务内，后续应迁到认证服务
+- 登录接口已经迁到认证服务，但租户服务当前仍直接读取 `auth_*` 表做令牌校验
 - 微信充值目前还是 mock 流程
 - 物理分库前仍然和平台服务共享 `auth_*` 表依赖

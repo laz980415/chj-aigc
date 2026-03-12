@@ -9,7 +9,20 @@ spring:
       discovery:
         enabled: ${NACOS_DISCOVERY_ENABLED:true}
         server-addr: ${NACOS_SERVER_ADDR:127.0.0.1:8848}
+  datasource:
+    url: ${AUTH_DB_URL:${APP_DB_URL:jdbc:postgresql://36.150.108.207:54312/chj-aigc}}
+    username: ${AUTH_DB_USERNAME:${APP_DB_USERNAME:postgres}}
+    password: ${AUTH_DB_PASSWORD:${APP_DB_PASSWORD:}}
+    driver-class-name: org.postgresql.Driver
+  sql:
+    init:
+      mode: always
+
+mybatis-plus:
+  mapper-locations: classpath*:mapper/*.xml
+  configuration:
+    map-underscore-to-camel-case: true
 
 logging:
   pattern:
-    console: "%d{yyyy-MM-dd HH:mm:ss.SSS} [%thread] %-5level %logger - %msg%n"
+    console: "%d{yyyy-MM-dd HH:mm:ss.SSS} [%thread] %-5level [%X{traceId:-no-trace}] %logger - %msg%n"

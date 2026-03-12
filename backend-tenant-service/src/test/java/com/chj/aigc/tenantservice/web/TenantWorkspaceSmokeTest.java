@@ -6,13 +6,13 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
 import com.chj.aigc.tenantservice.TenantServiceApplication;
+import com.chj.aigc.tenantservice.auth.AuthService;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMockMvc;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.http.MediaType;
 import org.springframework.test.web.servlet.MockMvc;
-import org.springframework.test.web.servlet.MvcResult;
 
 /**
  * 覆盖租户工作台关键链路：登录、项目、成员、额度。
@@ -22,6 +22,8 @@ import org.springframework.test.web.servlet.MvcResult;
 class TenantWorkspaceSmokeTest {
     @Autowired
     private MockMvc mockMvc;
+    @Autowired
+    private AuthService authService;
 
     @Test
     void tenantOwnerCanManageWorkspaceResources() throws Exception {
@@ -198,22 +200,6 @@ class TenantWorkspaceSmokeTest {
     }
 
     private String loginAndExtractToken(String username, String password) throws Exception {
-        MvcResult result = mockMvc.perform(post("/api/auth/login")
-                        .contentType(MediaType.APPLICATION_JSON)
-                        .content("""
-                                {
-                                  "username": "%s",
-                                  "password": "%s"
-                                }
-                                """.formatted(username, password)))
-                .andExpect(status().isOk())
-                .andExpect(jsonPath("$.code").value(0))
-                .andReturn();
-
-        String body = result.getResponse().getContentAsString();
-        int start = body.indexOf("\"token\":\"");
-        int valueStart = start + 9;
-        int valueEnd = body.indexOf('"', valueStart);
-        return body.substring(valueStart, valueEnd);
+        return authService.login(username, password).token();
     }
 }

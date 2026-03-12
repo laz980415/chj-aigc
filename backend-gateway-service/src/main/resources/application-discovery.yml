@@ -3,7 +3,7 @@ spring:
     gateway:
       routes:
         - id: tenant-auth-api
-          uri: lb://chj-aigc-tenant-service
+          uri: lb://chj-aigc-auth-service
           predicates:
             - Path=/api/auth/**
         - id: tenant-workspace-api

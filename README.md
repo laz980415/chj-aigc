@@ -22,11 +22,10 @@ The repository now includes:
 - `backend-tenant-service`: tenant workspace microservice skeleton
 - `backend-gateway-service`: Spring Cloud Gateway entry service
 
-Current API shell endpoints:
-- `GET /api/health`
-- `GET /api/db-info`
-- `GET /api/admin/summary`
-- `GET /api/admin/model-access-rules`
+当前已落地的主要接口分布：
+- 平台服务：`GET /api/health`、`GET /api/db-info`、`GET /api/admin/summary`、`GET /api/admin/model-access-rules`
+- 认证服务：`POST /api/auth/login`、`GET /api/auth/me`
+- 租户服务：`GET /api/tenant/**`、`POST /api/tenant/**`
 
 Service documents:
 
@@ -157,11 +156,12 @@ The Vite dev server now proxies `/api` requests to the gateway service at `http:
 Current local call path is:
 
 - `frontend-admin` -> `backend-gateway-service`
-- `backend-gateway-service` -> `backend-tenant-service` for `/api/auth/**` and `/api/tenant/**`
+- `backend-gateway-service` -> `chj-aigc-auth-service` for `/api/auth/**`
+- `backend-gateway-service` -> `backend-tenant-service` for `/api/tenant/**`
 - `backend-gateway-service` -> `chj-aigc-platform-service` for platform APIs under `/api/**`
 
 Platform service no longer directly exposes tenant workspace or login endpoints.
-Those APIs are served only by `backend-tenant-service`, and the frontend should always enter through the gateway.
+登录接口由 `chj-aigc-auth-service` 提供，租户工作台接口由 `backend-tenant-service` 提供，前端统一通过网关进入。
 
 ## Microservice Notes
 

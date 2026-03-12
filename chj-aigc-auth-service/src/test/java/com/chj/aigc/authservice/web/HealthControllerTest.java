@@ -24,7 +24,8 @@ class HealthControllerTest {
     void healthEndpointReturnsAuthServiceName() throws Exception {
         mockMvc.perform(get("/api/health"))
                 .andExpect(status().isOk())
-                .andExpect(jsonPath("$.service").value("chj-aigc-auth-service"))
-                .andExpect(jsonPath("$.status").value("ok"));
+                .andExpect(jsonPath("$.code").value(0))
+                .andExpect(jsonPath("$.data.service").value("chj-aigc-auth-service"))
+                .andExpect(jsonPath("$.data.status").value("ok"));
     }
 }
