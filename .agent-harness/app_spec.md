@@ -114,12 +114,19 @@
 - 生成链路保留幂等和重试能力。
 - 敏感素材与品牌资料需做访问控制。
 
+## Technology Direction
+- 业务后端以 Java 为主，承载租户、项目、权限、计费、素材、审计、管理后台接口等核心业务域。
+- 模型相关能力以 Python 为主，承载模型供应商适配、提示词组装、品牌约束注入、异步生成任务编排等 AI 相关逻辑。
+- Java 与 Python 之间通过清晰的内部 API、消息队列或任务协议通信，避免 Python 直接承担大部分业务主域。
+- 平台设计应允许后续把 Python 模型层独立扩缩容，而不影响 Java 业务服务。
+
 ## Suggested Architecture
-- `auth-service`: 身份、租户、RBAC。
-- `billing-service`: 钱包、额度、价格、账本。
-- `model-gateway`: 统一模型适配层与供应商切换。
-- `asset-service`: 素材库、品牌知识、文件元数据。
-- `generation-service`: 任务编排、提示词组装、结果持久化。
+- `auth-service` (Java): 身份、租户、RBAC。
+- `billing-service` (Java): 钱包、额度、价格、账本。
+- `asset-service` (Java): 素材库、品牌知识、文件元数据。
+- `admin-api` (Java): 超管、租户、项目、模型配置、审计等业务管理接口。
+- `model-gateway` (Python): 统一模型适配层与供应商切换。
+- `generation-worker` (Python): 任务编排、提示词组装、品牌约束注入、结果回传。
 - `admin-console`: 超管后台。
 - `tenant-console`: 租户/项目/用户控制台。
 

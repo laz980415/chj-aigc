@@ -11,6 +11,7 @@ Includes:
 - Project model
 - RBAC matrix
 - Core architecture decision records
+- Java business service boundary definition
 
 Backlog mapping:
 - feature-001
@@ -25,6 +26,7 @@ Includes:
 - Model provider registry
 - Platform model abstraction
 - Pricing units and ledger model
+- Python model gateway boundary definition
 
 Backlog mapping:
 - feature-003
@@ -112,3 +114,9 @@ The first implementation-ready target after this feature is:
 - Define a permission matrix and core entity schema for users, tenants, projects, roles, and memberships.
 
 That maps directly to `feature-002`.
+
+## Stack Rule
+
+- Java should implement business APIs, persistent business state, and admin workflows.
+- Python should implement AI-facing adapters, prompt pipelines, and generation workers.
+- Cross-language contracts should be explicit before generation features are implemented.

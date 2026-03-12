@@ -19,3 +19,8 @@ Validation: Ran python -m unittest discover -s tests -v and verified the new ide
 Implemented a unified model provider registry in platform_core/models.py with provider definitions, platform model aliases, capability types, metering dimensions, provider bindings, route resolution, and default seeded mappings for copy, image, and video generation.
 
 Validation: Ran python -m unittest discover -s tests -v and verified model registry tests for capability filtering, route priority, async routing, and disabled models.
+
+## 2026-03-12T04:46:08+00:00 - feature-004 - Implement platform pricing, metering units, and ledger model
+Implemented the billing core in platform_core/billing.py with platform pricing rules, metered usage inputs, charge quoting, vendor reference snapshots, immutable ledger entries, recharge handling, and seeded pricing for copy, image, and video capabilities.
+
+Validation: Ran python -m unittest discover -s tests -v and verified billing tests for token pricing, image usage settlement, and historical ledger stability after price changes.

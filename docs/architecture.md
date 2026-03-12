@@ -14,6 +14,8 @@ internal pricing, quota control, asset grounding, and auditable generation workf
 - Brand assets and rules must be first-class inputs to generation.
 - Video generation must be treated as an asynchronous workflow.
 - All high-cost and high-risk actions must be auditable.
+- Java owns the core business domain and platform APIs.
+- Python owns model integration, prompt assembly, and generation execution.
 
 ## Bounded Contexts
 
@@ -155,19 +157,22 @@ Key rules:
 
 ## Logical Service Layout
 
-### auth-service
+### auth-service (Java)
 - Users, tenants, projects, memberships, roles
 
-### billing-service
+### billing-service (Java)
 - Wallet, recharge, quota, pricing, ledger
 
-### model-gateway
+### asset-service (Java)
+- Clients, brands, brand rules, assets, collections metadata
+
+### admin-api (Java)
+- Super admin, tenant admin, project admin, audit, and configuration APIs
+
+### model-gateway (Python)
 - Providers, adapters, platform models, capability routing
 
-### asset-service
-- Clients, brands, brand rules, assets, collections
-
-### generation-service
+### generation-worker (Python)
 - Task orchestration, prompt assembly, job execution, outputs
 
 ### admin-console
@@ -175,6 +180,13 @@ Key rules:
 
 ### tenant-console
 - Tenant/project UI for users, budgets, assets, generation tasks
+
+## Service Boundary Rules
+
+- Java services are the system of record for tenants, projects, roles, wallets, quotas, assets, and audit state.
+- Python services must be stateless or near-stateless workers around model execution and AI orchestration.
+- Python must not become the primary owner of tenant, billing, or permission state.
+- Java initiates generation requests and persists business state; Python executes model-facing workflows and returns structured results.
 
 ## Suggested Data Relationships
 
@@ -198,16 +210,16 @@ Key rules:
 ## High-Level Request Flow
 
 1. User authenticates and selects a tenant and project.
-2. Platform checks membership and role permissions.
+2. Java business APIs check membership and role permissions.
 3. User submits a generation request with brand and asset references.
-4. Generation service loads brand rules and relevant assets.
-5. Model access policy verifies allowed models for the current scope.
-6. Billing service performs quota pre-check.
-7. Generation service builds prompt context and calls the platform model.
-8. Model gateway routes to the configured vendor adapter.
-9. Result and usage are persisted.
-10. Billing service writes ledger entries and quota consumption.
-11. Audit service records the event.
+4. Java services validate model access, quota eligibility, and business context.
+5. Java enqueues or forwards a structured generation job to Python services.
+6. Python generation worker loads brand rules and relevant assets context.
+7. Python model gateway routes to the configured vendor adapter.
+8. Python returns result metadata, usage, and provider references.
+9. Java persists result state and output records.
+10. Java billing service writes ledger entries and quota consumption.
+11. Java audit services record the event.
 
 ## V1 Technical Assumptions
 
@@ -216,6 +228,8 @@ Key rules:
 - Asset storage can start with object storage plus relational metadata.
 - Retrieval augmentation can be introduced later without breaking asset APIs.
 - Video generation is asynchronous from day one.
+- Primary business implementation stack is Java.
+- AI integration and orchestration stack is Python.
 
 ## Risks
 

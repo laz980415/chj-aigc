@@ -1,7 +1,7 @@
 # Session Packet
 
 Project: AIGC Advertising SaaS Platform
-Recommended feature: feature-004
+Recommended feature: feature-005
 
 Execution order:
 1. Read .agent-harness/session_brief.md

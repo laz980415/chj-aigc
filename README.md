@@ -7,6 +7,10 @@ This repository implements a practical harness inspired by Anthropic's article
 It is also aligned to Anthropic's official quickstart repository:
 <https://github.com/anthropics/claude-quickstarts/tree/main/autonomous-coding>.
 
+For this project direction:
+- Java is the primary language for business backend services.
+- Python is used for model-provider integration and AI orchestration.
+
 The core idea is simple:
 
 - An initializer step creates durable project artifacts.

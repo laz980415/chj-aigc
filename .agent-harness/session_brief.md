@@ -5,21 +5,21 @@ Project: AIGC Advertising SaaS Platform
 ## Status Snapshot
 
 - Pending: 8
-- In progress: 1
+- In progress: 0
 - Blocked: 0
-- Done: 3
+- Done: 4
 
 ## Recommended Next Feature
 
-- ID: feature-004
-- Title: Implement platform pricing, metering units, and ledger model
-- State: in_progress
-- Description: Define internal price units and billing records so vendor changes do not break tenant billing.
-- Depends on: feature-001, feature-003
+- ID: feature-005
+- Title: Implement tenant wallet recharge and quota allocation
+- State: pending
+- Description: Implement Java-side tenant wallet management and quota allocation for projects and users.
+- Depends on: feature-002, feature-004
 - Acceptance criteria:
-  - Pricing model supports token, image, and video-second dimensions
-  - Ledger records both internal price and underlying vendor reference
-  - Historical charges remain stable after future price changes
+  - Tenant wallet supports recharge records and balance queries
+  - Quota rules can be set per user and per project
+  - Quota dimensions include tokens, images, video seconds, and daily limits
 
 ## Session Rules
 
