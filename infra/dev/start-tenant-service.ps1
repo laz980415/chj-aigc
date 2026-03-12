@@ -2,7 +2,8 @@ param(
     [string]$DbUrl = "jdbc:postgresql://36.150.108.207:54312/chj-aigc",
     [string]$DbUsername = "postgres",
     [string]$DbPassword = "Linten@2023!",
-    [string]$NacosServer = "127.0.0.1:8848"
+    [string]$NacosServer = "127.0.0.1:8848",
+    [string]$LogFile = ""
 )
 
 $env:TENANT_DB_URL = $DbUrl
@@ -15,4 +16,9 @@ $env:NACOS_DISCOVERY_ENABLED = "true"
 $env:NACOS_SERVER_ADDR = $NacosServer
 
 Set-Location E:\ai-workspaces\backend-tenant-service
-mvn spring-boot:run "-Dmaven.repo.local=E:\repository"
+if ([string]::IsNullOrWhiteSpace($LogFile)) {
+    mvn spring-boot:run "-Dmaven.repo.local=E:\repository"
+} else {
+    New-Item -ItemType Directory -Force -Path ([System.IO.Path]::GetDirectoryName($LogFile)) | Out-Null
+    mvn spring-boot:run "-Dmaven.repo.local=E:\repository" *>&1 | Tee-Object -FilePath $LogFile
+}
