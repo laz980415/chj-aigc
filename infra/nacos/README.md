@@ -1,8 +1,36 @@
 # Nacos 本地开发服务
 
-这个目录提供本地开发用的 `Nacos` 单机编排。
+这个目录提供两种本地开发方式：
 
-## 启动
+- 无 Docker 的本地解压启动
+- Docker Compose 启动
+
+## 无 Docker 启动
+
+先下载并解压：
+
+```powershell
+Set-Location E:\ai-workspaces\infra\nacos
+.\download-nacos.ps1
+```
+
+启动：
+
+```powershell
+Set-Location E:\ai-workspaces\infra\nacos
+.\start-nacos.ps1
+```
+
+停止：
+
+```powershell
+Set-Location E:\ai-workspaces\infra\nacos
+.\stop-nacos.ps1
+```
+
+默认会下载并使用 `Nacos 2.4.1`。
+
+## Docker 启动
 
 ```powershell
 Set-Location E:\ai-workspaces\infra\nacos
@@ -17,7 +45,7 @@ http://127.0.0.1:8848/nacos
 
 当前开发环境关闭了鉴权，适合本地联调，不适合生产。
 
-## 关闭
+## Docker 停止
 
 ```powershell
 Set-Location E:\ai-workspaces\infra\nacos

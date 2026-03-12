@@ -3,6 +3,58 @@
         PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
         "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
 <mapper namespace="com.chj.aigc.tenantservice.persistence.mapper.TenantBillingMapper">
+    <select id="listLedgerEntries" resultType="map">
+        select id as id, tenant_id as tenantId, entry_type as entryType, amount as amount,
+               description as description, reference_id as referenceId, created_at as createdAt
+        from tenant_wallet_ledger
+        where tenant_id = #{tenantId}
+        order by created_at asc
+    </select>
+
+    <insert id="upsertLedgerEntry" parameterType="map">
+        insert into tenant_wallet_ledger (id, tenant_id, entry_type, amount, description, reference_id, created_at)
+        values (#{id}, #{tenantId}, #{entryType}, #{amount}, #{description}, #{referenceId}, #{createdAt})
+        on conflict (id) do update set
+            tenant_id = excluded.tenant_id,
+            entry_type = excluded.entry_type,
+            amount = excluded.amount,
+            description = excluded.description,
+            reference_id = excluded.reference_id,
+            created_at = excluded.created_at
+    </insert>
+
+    <select id="listPaymentOrders" resultType="map">
+        select id as id, tenant_id as tenantId, channel as channel, status as status, amount as amount,
+               description as description, reference_id as referenceId, qr_code as qrCode,
+               created_at as createdAt, paid_at as paidAt
+        from tenant_payment_orders
+        where tenant_id = #{tenantId}
+        order by created_at desc
+    </select>
+
+    <select id="findPaymentOrder" resultType="map">
+        select id as id, tenant_id as tenantId, channel as channel, status as status, amount as amount,
+               description as description, reference_id as referenceId, qr_code as qrCode,
+               created_at as createdAt, paid_at as paidAt
+        from tenant_payment_orders
+        where id = #{orderId}
+    </select>
+
+    <insert id="upsertPaymentOrder" parameterType="map">
+        insert into tenant_payment_orders (id, tenant_id, channel, status, amount, description, reference_id, qr_code, created_at, paid_at)
+        values (#{id}, #{tenantId}, #{channel}, #{status}, #{amount}, #{description}, #{referenceId}, #{qrCode}, #{createdAt}, #{paidAt})
+        on conflict (id) do update set
+            tenant_id = excluded.tenant_id,
+            channel = excluded.channel,
+            status = excluded.status,
+            amount = excluded.amount,
+            description = excluded.description,
+            reference_id = excluded.reference_id,
+            qr_code = excluded.qr_code,
+            created_at = excluded.created_at,
+            paid_at = excluded.paid_at
+    </insert>
+
     <select id="listQuotaAllocations" resultType="map">
         select id as id, tenant_id as tenantId, scope_type as scopeType, scope_id as scopeId,
                dimension as dimension, limit_value as limitValue, used_value as usedValue

@@ -10,6 +10,7 @@ import com.chj.aigc.tenantservice.auth.AuthSession;
 import com.chj.aigc.tenantservice.auth.AuthUser;
 import com.chj.aigc.tenantservice.billing.QuotaAllocation;
 import com.chj.aigc.tenantservice.billing.QuotaDimension;
+import com.chj.aigc.tenantservice.billing.Money;
 import com.chj.aigc.tenantservice.billing.QuotaScope;
 import com.chj.aigc.tenantservice.billing.QuotaScopeType;
 import com.chj.aigc.tenantservice.billing.TenantBillingService;
@@ -18,6 +19,7 @@ import com.chj.aigc.tenantservice.tenant.TenantWorkspaceService;
 import com.chj.aigc.tenantservice.web.dto.CreateProjectRequest;
 import com.chj.aigc.tenantservice.web.dto.CreateBrandRequest;
 import com.chj.aigc.tenantservice.web.dto.CreateClientRequest;
+import com.chj.aigc.tenantservice.web.dto.CreatePaymentOrderRequest;
 import com.chj.aigc.tenantservice.web.dto.CreateTenantMemberRequest;
 import com.chj.aigc.tenantservice.web.dto.UpdateTenantMemberRoleRequest;
 import com.chj.aigc.tenantservice.web.dto.UpdateTenantMemberStatusRequest;
@@ -61,6 +63,37 @@ public class TenantApiController {
     @GetMapping("/projects")
     public ApiResponse<List<TenantProject>> projects(HttpServletRequest request) {
         return ApiResponse.success(tenantWorkspaceService.projects(resolveTenantId(request)));
+    }
+
+    @GetMapping("/wallet")
+    public ApiResponse<Map<String, Object>> wallet(HttpServletRequest request) {
+        return ApiResponse.success(tenantBillingService.walletSnapshot(resolveTenantId(request)));
+    }
+
+    @GetMapping("/wallet/payment-orders")
+    public ApiResponse<List<Map<String, Object>>> paymentOrders(HttpServletRequest request) {
+        return ApiResponse.success(tenantBillingService.paymentOrders(resolveTenantId(request)));
+    }
+
+    @PostMapping("/wallet/payment-orders/wechat")
+    public ApiResponse<Map<String, Object>> createWeChatPaymentOrder(
+            @RequestBody CreatePaymentOrderRequest request,
+            HttpServletRequest httpRequest
+    ) {
+        requireTenantOwner(httpRequest);
+        return ApiResponse.success(tenantBillingService.createMockWeChatPaymentOrder(
+                resolveTenantId(httpRequest),
+                request.orderId(),
+                Money.of(request.amount()),
+                request.description(),
+                request.referenceId()
+        ));
+    }
+
+    @PostMapping("/wallet/payment-orders/{orderId}/mock-paid")
+    public ApiResponse<Map<String, Object>> mockPayOrder(@PathVariable String orderId, HttpServletRequest httpRequest) {
+        requireTenantOwner(httpRequest);
+        return ApiResponse.success(tenantBillingService.markPaymentOrderPaid(orderId));
     }
 
     @PostMapping("/projects")

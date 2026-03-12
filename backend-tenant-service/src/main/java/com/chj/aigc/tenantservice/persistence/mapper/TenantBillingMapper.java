@@ -8,6 +8,16 @@ import org.apache.ibatis.annotations.Param;
  * 租户额度 MyBatis 映射接口。
  */
 public interface TenantBillingMapper {
+    List<Map<String, Object>> listLedgerEntries(@Param("tenantId") String tenantId);
+
+    void upsertLedgerEntry(Map<String, Object> entry);
+
+    List<Map<String, Object>> listPaymentOrders(@Param("tenantId") String tenantId);
+
+    Map<String, Object> findPaymentOrder(@Param("orderId") String orderId);
+
+    void upsertPaymentOrder(Map<String, Object> order);
+
     List<Map<String, Object>> listQuotaAllocations(@Param("tenantId") String tenantId);
 
     void upsertQuotaAllocation(Map<String, Object> allocation);

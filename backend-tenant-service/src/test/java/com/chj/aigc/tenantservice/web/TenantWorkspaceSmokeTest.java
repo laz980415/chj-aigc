@@ -73,6 +73,28 @@ class TenantWorkspaceSmokeTest {
                 .andExpect(jsonPath("$.code").value(0))
                 .andExpect(jsonPath("$.data.projectImageRemaining").exists());
 
+        mockMvc.perform(post("/api/tenant/wallet/payment-orders/wechat")
+                        .header("X-Auth-Token", token)
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("""
+                                {
+                                  "orderId": "tenant-service-pay-ui",
+                                  "tenantId": "tenant-demo",
+                                  "amount": "88.00",
+                                  "description": "租户服务模拟充值",
+                                  "referenceId": "tenant-service-smoke"
+                                }
+                                """))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.code").value(0))
+                .andExpect(jsonPath("$.data.id").value("tenant-service-pay-ui"));
+
+        mockMvc.perform(post("/api/tenant/wallet/payment-orders/tenant-service-pay-ui/mock-paid")
+                        .header("X-Auth-Token", token))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.code").value(0))
+                .andExpect(jsonPath("$.data.status").value("PAID"));
+
         mockMvc.perform(post("/api/tenant/clients")
                         .header("X-Auth-Token", token)
                         .contentType(MediaType.APPLICATION_JSON)
@@ -115,6 +137,16 @@ class TenantWorkspaceSmokeTest {
                         .header("X-Auth-Token", token))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.data[?(@.id=='tenant-service-quota-ui')]").exists());
+
+        mockMvc.perform(get("/api/tenant/wallet")
+                        .header("X-Auth-Token", token))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.data.balance").exists());
+
+        mockMvc.perform(get("/api/tenant/wallet/payment-orders")
+                        .header("X-Auth-Token", token))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.data[?(@.id=='tenant-service-pay-ui')]").exists());
 
         mockMvc.perform(get("/api/tenant/clients")
                         .header("X-Auth-Token", token))

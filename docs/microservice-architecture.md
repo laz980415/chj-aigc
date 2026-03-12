@@ -42,15 +42,20 @@
 
 - `infra/nacos/docker-compose.yml`
 - `infra/nacos/README.md`
+- `infra/nacos/download-nacos.ps1`
+- `infra/nacos/start-nacos.ps1`
+- `infra/nacos/stop-nacos.ps1`
 
-直接执行：
+无 Docker 环境可以直接执行：
 
 ```powershell
 Set-Location E:\ai-workspaces\infra\nacos
-docker compose up -d
+.\download-nacos.ps1
+.\start-nacos.ps1
 ```
 
-即可在本地启动 `Nacos 2.4.1` 单机开发服务。
+如果本机有 Docker，也可以继续使用 `docker compose up -d`。
+两种方式都会在本地启动 `Nacos 2.4.1` 单机开发服务。
 
 ## 官方兼容版本
 

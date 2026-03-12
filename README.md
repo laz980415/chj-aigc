@@ -38,7 +38,15 @@ Requirements:
 - Maven using local repository `E:\repository`
 - Optional Nacos server for service discovery
 
-Start local Nacos for development:
+Start local Nacos for development without Docker:
+
+```powershell
+Set-Location infra\nacos
+.\download-nacos.ps1
+.\start-nacos.ps1
+```
+
+Or start local Nacos with Docker:
 
 ```powershell
 Set-Location infra\nacos

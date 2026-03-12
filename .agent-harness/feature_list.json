@@ -395,7 +395,7 @@
       ],
       "state": "in_progress",
       "created_at": "2026-03-12T07:22:00+00:00",
-      "updated_at": "2026-03-12T07:46:00+00:00",
+      "updated_at": "2026-03-12T07:55:00+00:00",
       "session_notes": [
         {
           "at": "2026-03-12T07:22:00+00:00",
@@ -408,6 +408,33 @@
         {
           "at": "2026-03-12T07:46:00+00:00",
           "note": "Migrated tenant client, brand, and asset APIs into backend-tenant-service, added XML mappers plus Chinese-commented schema compatibility for shared PostgreSQL tables, and added a local Nacos docker compose setup for Spring Cloud Alibaba development."
+        },
+        {
+          "at": "2026-03-12T07:55:00+00:00",
+          "note": "Extended backend-tenant-service with tenant wallet snapshot and mock WeChat payment order APIs, and added non-Docker local Nacos download/start/stop PowerShell scripts for Windows development."
+        }
+      ]
+    },
+    {
+      "id": "feature-016",
+      "title": "Containerize all application services except PostgreSQL",
+      "description": "Add Dockerfiles and unified local deployment definitions for the Java platform service, Java tenant service, Java gateway service, Python model service, frontend admin service, and Nacos, while keeping PostgreSQL external.",
+      "acceptance_criteria": [
+        "Each application service has a production-usable Dockerfile",
+        "A unified local compose definition can start all services except PostgreSQL",
+        "Environment variables and inter-service addresses are documented for container deployment"
+      ],
+      "depends_on": [
+        "feature-014",
+        "feature-015"
+      ],
+      "state": "pending",
+      "created_at": "2026-03-12T07:55:00+00:00",
+      "updated_at": "2026-03-12T07:55:00+00:00",
+      "session_notes": [
+        {
+          "at": "2026-03-12T07:55:00+00:00",
+          "note": "User requires all services except PostgreSQL to support container deployment later. Add Dockerfiles and a unified compose stack after the core microservice split is stable."
         }
       ]
     }

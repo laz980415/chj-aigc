@@ -86,6 +86,48 @@ comment on column tenant_quota_allocations.dimension is '额度维度';
 comment on column tenant_quota_allocations.limit_value is '总额度上限';
 comment on column tenant_quota_allocations.used_value is '已使用额度';
 
+create table if not exists tenant_wallet_ledger (
+    id varchar(64) primary key,
+    tenant_id varchar(64) not null,
+    entry_type varchar(32) not null,
+    amount numeric(18, 4) not null,
+    description varchar(255) not null,
+    reference_id varchar(64) not null,
+    created_at timestamp not null
+);
+comment on table tenant_wallet_ledger is '租户钱包流水表';
+comment on column tenant_wallet_ledger.id is '钱包流水主键';
+comment on column tenant_wallet_ledger.tenant_id is '所属租户标识';
+comment on column tenant_wallet_ledger.entry_type is '流水类型';
+comment on column tenant_wallet_ledger.amount is '变动金额';
+comment on column tenant_wallet_ledger.description is '流水说明';
+comment on column tenant_wallet_ledger.reference_id is '业务引用标识';
+comment on column tenant_wallet_ledger.created_at is '创建时间';
+
+create table if not exists tenant_payment_orders (
+    id varchar(64) primary key,
+    tenant_id varchar(64) not null,
+    channel varchar(32) not null,
+    status varchar(32) not null,
+    amount numeric(18, 4) not null,
+    description varchar(255) not null,
+    reference_id varchar(64) not null,
+    qr_code varchar(255) not null,
+    created_at timestamp not null,
+    paid_at timestamp
+);
+comment on table tenant_payment_orders is '租户支付订单表';
+comment on column tenant_payment_orders.id is '支付订单主键';
+comment on column tenant_payment_orders.tenant_id is '所属租户标识';
+comment on column tenant_payment_orders.channel is '支付通道';
+comment on column tenant_payment_orders.status is '订单状态';
+comment on column tenant_payment_orders.amount is '订单金额';
+comment on column tenant_payment_orders.description is '订单描述';
+comment on column tenant_payment_orders.reference_id is '业务引用标识';
+comment on column tenant_payment_orders.qr_code is '支付二维码或拉起链接';
+comment on column tenant_payment_orders.created_at is '创建时间';
+comment on column tenant_payment_orders.paid_at is '支付完成时间';
+
 create table if not exists tenant_clients (
     id varchar(64) primary key,
     tenant_id varchar(64) not null,
