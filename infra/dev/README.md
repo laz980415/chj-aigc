@@ -18,12 +18,14 @@ Set-Location E:\ai-workspaces\infra\dev
 默认会拉起：
 
 - 平台服务
+- 认证服务
 - 租户服务
 - 网关服务
 
 并把控制台输出同时写入：
 
 - `logs/platform-service.log`
+- `logs/auth-service.log`
 - `logs/tenant-service.log`
 - `logs/gateway-service.log`
 
@@ -31,6 +33,7 @@ Set-Location E:\ai-workspaces\infra\dev
 
 ```powershell
 .\start-platform-service.ps1 -LogFile E:\ai-workspaces\infra\dev\logs\platform-service.log
+.\start-auth-service.ps1 -LogFile E:\ai-workspaces\infra\dev\logs\auth-service.log
 .\start-tenant-service.ps1 -LogFile E:\ai-workspaces\infra\dev\logs\tenant-service.log
 .\start-gateway-service.ps1 -LogFile E:\ai-workspaces\infra\dev\logs\gateway-service.log
 ```
@@ -38,5 +41,5 @@ Set-Location E:\ai-workspaces\infra\dev
 ## 关注点
 
 - 每个请求都应该带 `X-Trace-Id`
-- 网关、平台服务、租户服务日志都应该能按同一个 `traceId` 串起来
+- 网关、平台服务、认证服务、租户服务日志都应该能按同一个 `traceId` 串起来
 - 如果注册发现异常，先看 `gateway-service.log` 和对应服务日志里的 Nacos 连接信息

@@ -42,6 +42,7 @@ public class ApplicationConfig {
     /**
      * 统一装配平台服务需要的 Web、鉴权和平台管理组件。
      * 租户工作台能力已经迁移到独立的 backend-tenant-service。
+     * 当前平台服务目录名为 chj-aigc-platform-service。
      */
     @Bean
     @ConditionalOnMissingBean(DataSource.class)

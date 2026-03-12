@@ -218,7 +218,7 @@ Exit criteria:
 The backlog core is now effectively complete. The highest-value next move is no longer another isolated domain model.
 
 Recommended next phase:
-1. Create a Java Spring Boot service shell in `backend-java`.
+1. Create a Java Spring Boot service shell in `chj-aigc-platform-service`.
 2. Expose APIs for:
    - tenant and project management
    - wallet and quota management

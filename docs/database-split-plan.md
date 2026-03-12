@@ -11,9 +11,9 @@
 
 ## 当前服务归属
 
-### 平台服务 `backend-java`
+### 平台服务 `chj-aigc-platform-service`
 
-平台服务当前只负责平台超管视角，因此它的初始化脚本 [schema.sql](/e:/ai-workspaces/backend-java/src/main/resources/schema.sql) 只保留这些表：
+平台服务当前只负责平台超管视角，因此它的初始化脚本 [schema.sql](/e:/ai-workspaces/chj-aigc-platform-service/src/main/resources/schema.sql) 只保留这些表：
 
 - `model_access_rules`
 - `model_access_audit_events`

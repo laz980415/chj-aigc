@@ -369,7 +369,7 @@
       "session_notes": [
         {
           "at": "2026-03-12T07:22:00+00:00",
-          "note": "Started migrating the Java backend from a single Spring Boot application to a Spring Cloud Alibaba microservice layout. Platform management stays in backend-java first, while a dedicated backend-tenant-service is introduced and both services are prepared for Nacos registration and discovery."
+          "note": "Started migrating the Java backend from a single Spring Boot application to a Spring Cloud Alibaba microservice layout. Platform management stays in chj-aigc-platform-service first, while a dedicated backend-tenant-service is introduced and both services are prepared for Nacos registration and discovery."
         },
         {
           "at": "2026-03-12T07:52:00+00:00",
@@ -419,7 +419,7 @@
         },
         {
           "at": "2026-03-12T08:22:00+00:00",
-          "note": "Removed `/api/auth/**` and `/api/tenant/**` controllers from backend-java so platform service no longer serves tenant workspace or login APIs directly. The unified frontend entry now depends on gateway routing those paths to backend-tenant-service."
+          "note": "Removed `/api/auth/**` and `/api/tenant/**` controllers from chj-aigc-platform-service so platform service no longer serves tenant workspace or login APIs directly. The unified frontend entry now depends on gateway routing those paths to backend-tenant-service."
         },
         {
           "at": "2026-03-12T08:40:00+00:00",
@@ -444,7 +444,7 @@
         "feature-014",
         "feature-015"
       ],
-      "state": "pending",
+      "state": "in_progress",
       "created_at": "2026-03-12T07:55:00+00:00",
       "updated_at": "2026-03-12T07:55:00+00:00",
       "session_notes": [
@@ -469,11 +469,15 @@
       ],
       "state": "pending",
       "created_at": "2026-03-12T08:40:00+00:00",
-      "updated_at": "2026-03-12T08:40:00+00:00",
+      "updated_at": "2026-03-12T08:20:00+00:00",
       "session_notes": [
         {
           "at": "2026-03-12T08:40:00+00:00",
           "note": "Physical PostgreSQL split is not complete yet because both platform and tenant flows still depend on auth_users and auth_sessions. Add a dedicated identity ownership step before switching both services to separate databases."
+        },
+        {
+          "at": "2026-03-12T08:20:00+00:00",
+          "note": "Renamed backend-java to chj-aigc-platform-service and started a dedicated auth-service split so platform and tenant services can stop sharing direct auth table ownership."
         }
       ]
     },

@@ -11,8 +11,10 @@ New-Item -ItemType Directory -Force -Path $LogDir | Out-Null
 
 Start-Process powershell -ArgumentList "-NoExit", "-ExecutionPolicy", "Bypass", "-File", "$scriptRoot\start-platform-service.ps1", "-DbUrl", $DbUrl, "-DbUsername", $DbUsername, "-DbPassword", $DbPassword, "-NacosServer", $NacosServer, "-LogFile", "$LogDir\platform-service.log"
 Start-Sleep -Seconds 2
+Start-Process powershell -ArgumentList "-NoExit", "-ExecutionPolicy", "Bypass", "-File", "$scriptRoot\start-auth-service.ps1", "-NacosServer", $NacosServer, "-LogFile", "$LogDir\auth-service.log"
+Start-Sleep -Seconds 2
 Start-Process powershell -ArgumentList "-NoExit", "-ExecutionPolicy", "Bypass", "-File", "$scriptRoot\start-tenant-service.ps1", "-DbUrl", $DbUrl, "-DbUsername", $DbUsername, "-DbPassword", $DbPassword, "-NacosServer", $NacosServer, "-LogFile", "$LogDir\tenant-service.log"
 Start-Sleep -Seconds 2
 Start-Process powershell -ArgumentList "-NoExit", "-ExecutionPolicy", "Bypass", "-File", "$scriptRoot\start-gateway-service.ps1", "-NacosServer", $NacosServer, "-LogFile", "$LogDir\gateway-service.log"
 
-Write-Host "已拉起平台服务、租户服务、网关服务。日志目录：$LogDir。请确认 Nacos 已启动。"
+Write-Host "已拉起平台服务、认证服务、租户服务、网关服务。日志目录：$LogDir。请确认 Nacos 已启动。"

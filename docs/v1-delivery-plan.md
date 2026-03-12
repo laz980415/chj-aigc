@@ -83,7 +83,7 @@ Output:
 
 The next task after this document should be:
 
-1. Create Spring Boot application skeleton in `backend-java`
+1. Create Spring Boot application skeleton in `chj-aigc-platform-service`
 2. Expose one concrete admin API set
 3. Add the first frontend shell
 

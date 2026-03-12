@@ -6,7 +6,7 @@
 
 当前仓库里的服务职责先这样划分：
 
-- `backend-java`
+- `chj-aigc-platform-service`
   - 平台管理服务
   - 负责超管后台、认证、模型访问策略、租户总览、充值订单管理
 - `backend-tenant-service`
@@ -131,7 +131,7 @@ Set-Location E:\ai-workspaces\infra\nacos
 
 - `/api/auth/**` -> `backend-tenant-service`
 - `/api/tenant/**` -> `backend-tenant-service`
-- `/api/**` -> `backend-java`
+- `/api/**` -> `chj-aigc-platform-service`
 
 也就是说，前端开发环境已经统一走网关，并且租户登录、项目、成员、额度接口会优先进租户服务。
 平台服务已经移除 `/api/auth/**` 和 `/api/tenant/**` 控制器，只保留超管平台能力。
