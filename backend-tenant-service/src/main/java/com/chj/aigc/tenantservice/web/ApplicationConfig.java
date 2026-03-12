@@ -2,6 +2,9 @@ package com.chj.aigc.tenantservice.web;
 
 import com.baomidou.mybatisplus.core.MybatisConfiguration;
 import com.baomidou.mybatisplus.extension.spring.MybatisSqlSessionFactoryBean;
+import com.chj.aigc.tenantservice.asset.AssetCatalogStore;
+import com.chj.aigc.tenantservice.asset.MybatisAssetCatalogStore;
+import com.chj.aigc.tenantservice.asset.TenantAssetCatalogService;
 import com.chj.aigc.tenantservice.auth.AuthInterceptor;
 import com.chj.aigc.tenantservice.auth.AuthService;
 import com.chj.aigc.tenantservice.auth.AuthStore;
@@ -9,6 +12,7 @@ import com.chj.aigc.tenantservice.auth.MybatisAuthStore;
 import com.chj.aigc.tenantservice.billing.MybatisTenantBillingStore;
 import com.chj.aigc.tenantservice.billing.TenantBillingService;
 import com.chj.aigc.tenantservice.billing.TenantBillingStore;
+import com.chj.aigc.tenantservice.persistence.mapper.AssetCatalogMapper;
 import com.chj.aigc.tenantservice.persistence.mapper.AuthMapper;
 import com.chj.aigc.tenantservice.persistence.mapper.TenantBillingMapper;
 import com.chj.aigc.tenantservice.persistence.mapper.TenantProjectMapper;
@@ -85,6 +89,16 @@ public class ApplicationConfig {
     @Bean
     public AuthService authService(AuthStore authStore) {
         return new AuthService(authStore);
+    }
+
+    @Bean
+    public AssetCatalogStore assetCatalogStore(AssetCatalogMapper assetCatalogMapper) {
+        return new MybatisAssetCatalogStore(assetCatalogMapper);
+    }
+
+    @Bean
+    public TenantAssetCatalogService tenantAssetCatalogService(AssetCatalogStore assetCatalogStore) {
+        return new TenantAssetCatalogService(assetCatalogStore);
     }
 
     @Bean

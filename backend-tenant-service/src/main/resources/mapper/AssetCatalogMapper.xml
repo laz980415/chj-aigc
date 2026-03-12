@@ -1,0 +1,62 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper
+        PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+        "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.chj.aigc.tenantservice.persistence.mapper.AssetCatalogMapper">
+    <select id="listClients" resultType="map">
+        select id as id, tenant_id as tenantId, name as name, active as active
+        from tenant_clients
+        where tenant_id = #{tenantId}
+        order by name asc
+    </select>
+
+    <insert id="upsertClient" parameterType="map">
+        insert into tenant_clients (id, tenant_id, name, active)
+        values (#{id}, #{tenantId}, #{name}, #{active})
+        on conflict (id) do update set
+            tenant_id = excluded.tenant_id,
+            name = excluded.name,
+            active = excluded.active
+    </insert>
+
+    <select id="listBrands" resultType="map">
+        select id as id, tenant_id as tenantId, client_id as clientId, name as name, summary as summary, active as active
+        from tenant_brands
+        where tenant_id = #{tenantId}
+        order by name asc
+    </select>
+
+    <insert id="upsertBrand" parameterType="map">
+        insert into tenant_brands (id, tenant_id, client_id, name, summary, active)
+        values (#{id}, #{tenantId}, #{clientId}, #{name}, #{summary}, #{active})
+        on conflict (id) do update set
+            tenant_id = excluded.tenant_id,
+            client_id = excluded.client_id,
+            name = excluded.name,
+            summary = excluded.summary,
+            active = excluded.active
+    </insert>
+
+    <select id="listAssets" resultType="map">
+        select id as id, tenant_id as tenantId, project_id as projectId, client_id as clientId,
+               brand_id as brandId, name as name, kind as kind, uri as uri, tags as tags, active as active
+        from tenant_assets
+        where tenant_id = #{tenantId}
+        order by name asc
+    </select>
+
+    <insert id="upsertAsset" parameterType="map">
+        insert into tenant_assets (id, tenant_id, project_id, client_id, brand_id, name, kind, uri, tags, active)
+        values (#{id}, #{tenantId}, #{projectId}, #{clientId}, #{brandId}, #{name}, #{kind}, #{uri}, #{tags}, #{active})
+        on conflict (id) do update set
+            tenant_id = excluded.tenant_id,
+            project_id = excluded.project_id,
+            client_id = excluded.client_id,
+            brand_id = excluded.brand_id,
+            name = excluded.name,
+            kind = excluded.kind,
+            uri = excluded.uri,
+            tags = excluded.tags,
+            active = excluded.active
+    </insert>
+</mapper>

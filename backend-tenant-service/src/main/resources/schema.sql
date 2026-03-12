@@ -85,3 +85,72 @@ comment on column tenant_quota_allocations.scope_id is '额度范围对象标识
 comment on column tenant_quota_allocations.dimension is '额度维度';
 comment on column tenant_quota_allocations.limit_value is '总额度上限';
 comment on column tenant_quota_allocations.used_value is '已使用额度';
+
+create table if not exists tenant_clients (
+    id varchar(64) primary key,
+    tenant_id varchar(64) not null,
+    name varchar(128) not null,
+    active boolean not null default true
+);
+comment on table tenant_clients is '租户客户表';
+comment on column tenant_clients.id is '客户主键';
+comment on column tenant_clients.tenant_id is '所属租户标识';
+comment on column tenant_clients.name is '客户名称';
+comment on column tenant_clients.active is '是否启用';
+
+alter table if exists tenant_clients add column if not exists active boolean default true;
+update tenant_clients set active = coalesce(active, true);
+alter table if exists tenant_clients alter column active set not null;
+
+create table if not exists tenant_brands (
+    id varchar(64) primary key,
+    tenant_id varchar(64) not null,
+    client_id varchar(64) not null,
+    name varchar(128) not null,
+    summary varchar(255) not null default '',
+    active boolean not null default true
+);
+comment on table tenant_brands is '租户品牌表';
+comment on column tenant_brands.id is '品牌主键';
+comment on column tenant_brands.tenant_id is '所属租户标识';
+comment on column tenant_brands.client_id is '所属客户标识';
+comment on column tenant_brands.name is '品牌名称';
+comment on column tenant_brands.summary is '品牌摘要';
+comment on column tenant_brands.active is '是否启用';
+
+alter table if exists tenant_brands add column if not exists active boolean default true;
+alter table if exists tenant_brands add column if not exists summary varchar(255) default '';
+update tenant_brands
+set active = coalesce(active, true),
+    summary = coalesce(summary, '');
+alter table if exists tenant_brands alter column active set not null;
+alter table if exists tenant_brands alter column summary set not null;
+
+create table if not exists tenant_assets (
+    id varchar(64) primary key,
+    tenant_id varchar(64) not null,
+    project_id varchar(64) not null,
+    client_id varchar(64) not null,
+    brand_id varchar(64) not null,
+    name varchar(128) not null,
+    kind varchar(32) not null,
+    uri varchar(255) not null,
+    tags varchar(255),
+    active boolean not null default true
+);
+comment on table tenant_assets is '租户素材表';
+comment on column tenant_assets.id is '素材主键';
+comment on column tenant_assets.tenant_id is '所属租户标识';
+comment on column tenant_assets.project_id is '所属项目标识';
+comment on column tenant_assets.client_id is '所属客户标识';
+comment on column tenant_assets.brand_id is '所属品牌标识';
+comment on column tenant_assets.name is '素材名称';
+comment on column tenant_assets.kind is '素材类型';
+comment on column tenant_assets.uri is '素材存储地址';
+comment on column tenant_assets.tags is '素材标签，使用逗号分隔';
+comment on column tenant_assets.active is '是否启用';
+
+alter table if exists tenant_assets add column if not exists active boolean default true;
+alter table if exists tenant_assets add column if not exists tags varchar(255);
+update tenant_assets set active = coalesce(active, true);
+alter table if exists tenant_assets alter column active set not null;

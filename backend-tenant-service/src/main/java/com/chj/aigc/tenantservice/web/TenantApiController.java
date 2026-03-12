@@ -1,5 +1,9 @@
 package com.chj.aigc.tenantservice.web;
 
+import com.chj.aigc.tenantservice.asset.Asset;
+import com.chj.aigc.tenantservice.asset.Brand;
+import com.chj.aigc.tenantservice.asset.Client;
+import com.chj.aigc.tenantservice.asset.TenantAssetCatalogService;
 import com.chj.aigc.tenantservice.auth.AuthInterceptor;
 import com.chj.aigc.tenantservice.auth.AuthService;
 import com.chj.aigc.tenantservice.auth.AuthSession;
@@ -12,6 +16,8 @@ import com.chj.aigc.tenantservice.billing.TenantBillingService;
 import com.chj.aigc.tenantservice.tenant.TenantProject;
 import com.chj.aigc.tenantservice.tenant.TenantWorkspaceService;
 import com.chj.aigc.tenantservice.web.dto.CreateProjectRequest;
+import com.chj.aigc.tenantservice.web.dto.CreateBrandRequest;
+import com.chj.aigc.tenantservice.web.dto.CreateClientRequest;
 import com.chj.aigc.tenantservice.web.dto.CreateTenantMemberRequest;
 import com.chj.aigc.tenantservice.web.dto.UpdateTenantMemberRoleRequest;
 import com.chj.aigc.tenantservice.web.dto.UpdateTenantMemberStatusRequest;
@@ -38,15 +44,18 @@ public class TenantApiController {
     private final TenantWorkspaceService tenantWorkspaceService;
     private final TenantBillingService tenantBillingService;
     private final AuthService authService;
+    private final TenantAssetCatalogService tenantAssetCatalogService;
 
     public TenantApiController(
             TenantWorkspaceService tenantWorkspaceService,
             TenantBillingService tenantBillingService,
-            AuthService authService
+            AuthService authService,
+            TenantAssetCatalogService tenantAssetCatalogService
     ) {
         this.tenantWorkspaceService = tenantWorkspaceService;
         this.tenantBillingService = tenantBillingService;
         this.authService = authService;
+        this.tenantAssetCatalogService = tenantAssetCatalogService;
     }
 
     @GetMapping("/projects")
@@ -63,6 +72,48 @@ public class TenantApiController {
     @GetMapping("/members")
     public ApiResponse<List<Map<String, Object>>> members(HttpServletRequest request) {
         return ApiResponse.success(authService.listTenantUsers(resolveTenantId(request)).stream().map(this::serializeUser).toList());
+    }
+
+    @GetMapping("/clients")
+    public ApiResponse<List<Client>> clients(HttpServletRequest request) {
+        return ApiResponse.success(tenantAssetCatalogService.clients(resolveTenantId(request)));
+    }
+
+    @PostMapping("/clients")
+    public ApiResponse<Client> createClient(@RequestBody CreateClientRequest request, HttpServletRequest httpRequest) {
+        requireTenantOwner(httpRequest);
+        return ApiResponse.success(tenantAssetCatalogService.createClient(
+                request.clientId(),
+                resolveTenantId(httpRequest),
+                request.name()
+        ));
+    }
+
+    @GetMapping("/brands")
+    public ApiResponse<List<Brand>> brands(HttpServletRequest request) {
+        return ApiResponse.success(tenantAssetCatalogService.brands(resolveTenantId(request), null));
+    }
+
+    @GetMapping("/brands/{clientId}")
+    public ApiResponse<List<Brand>> brandsByClient(@PathVariable String clientId, HttpServletRequest request) {
+        return ApiResponse.success(tenantAssetCatalogService.brands(resolveTenantId(request), clientId));
+    }
+
+    @PostMapping("/brands")
+    public ApiResponse<Brand> createBrand(@RequestBody CreateBrandRequest request, HttpServletRequest httpRequest) {
+        requireTenantOwner(httpRequest);
+        return ApiResponse.success(tenantAssetCatalogService.createBrand(
+                request.brandId(),
+                resolveTenantId(httpRequest),
+                request.clientId(),
+                request.name(),
+                request.summary()
+        ));
+    }
+
+    @GetMapping("/assets")
+    public ApiResponse<List<Asset>> assets(HttpServletRequest request) {
+        return ApiResponse.success(tenantAssetCatalogService.assets(resolveTenantId(request)));
     }
 
     @PostMapping("/members")

@@ -73,6 +73,34 @@ class TenantWorkspaceSmokeTest {
                 .andExpect(jsonPath("$.code").value(0))
                 .andExpect(jsonPath("$.data.projectImageRemaining").exists());
 
+        mockMvc.perform(post("/api/tenant/clients")
+                        .header("X-Auth-Token", token)
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("""
+                                {
+                                  "clientId": "tenant-service-client-ui",
+                                  "name": "租户服务广告主"
+                                }
+                                """))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.code").value(0))
+                .andExpect(jsonPath("$.data.id").value("tenant-service-client-ui"));
+
+        mockMvc.perform(post("/api/tenant/brands")
+                        .header("X-Auth-Token", token)
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("""
+                                {
+                                  "brandId": "tenant-service-brand-ui",
+                                  "clientId": "tenant-service-client-ui",
+                                  "name": "租户服务品牌",
+                                  "summary": "用于租户服务接口联调"
+                                }
+                                """))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.code").value(0))
+                .andExpect(jsonPath("$.data.id").value("tenant-service-brand-ui"));
+
         mockMvc.perform(get("/api/tenant/projects")
                         .header("X-Auth-Token", token))
                 .andExpect(status().isOk())
@@ -87,6 +115,21 @@ class TenantWorkspaceSmokeTest {
                         .header("X-Auth-Token", token))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.data[?(@.id=='tenant-service-quota-ui')]").exists());
+
+        mockMvc.perform(get("/api/tenant/clients")
+                        .header("X-Auth-Token", token))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.data[?(@.id=='tenant-service-client-ui')]").exists());
+
+        mockMvc.perform(get("/api/tenant/brands")
+                        .header("X-Auth-Token", token))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.data[?(@.id=='tenant-service-brand-ui')]").exists());
+
+        mockMvc.perform(get("/api/tenant/assets")
+                        .header("X-Auth-Token", token))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.data[0].id").exists());
     }
 
     @Test

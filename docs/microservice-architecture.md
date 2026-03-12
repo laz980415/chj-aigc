@@ -38,6 +38,20 @@
 
 为了不阻塞本地开发，默认把 `NACOS_DISCOVERY_ENABLED` 设为 `false`。本地没有启动 Nacos 时，服务也可以独立跑起来。
 
+仓库里已经补了本地开发版 Nacos 编排：
+
+- `infra/nacos/docker-compose.yml`
+- `infra/nacos/README.md`
+
+直接执行：
+
+```powershell
+Set-Location E:\ai-workspaces\infra\nacos
+docker compose up -d
+```
+
+即可在本地启动 `Nacos 2.4.1` 单机开发服务。
+
 ## 官方兼容版本
 
 这轮按官方兼容组合收口：
@@ -125,5 +139,7 @@
 - 前端已通过网关访问后端
 - 平台 API 已挂在网关统一入口 `/api/**`
 - 租户登录、项目、成员、额度接口已开始通过 `/api/auth/**` 和 `/api/tenant/**` 切到租户服务
+- 租户客户、品牌、素材接口也已迁到租户服务
 - 租户服务仍保留独立实验入口 `/tenant-api/**`
-- 下一步继续迁移客户、品牌、素材等租户域接口
+- 仓库内已提供本地 Nacos 开发编排，后续可以切到 `lb://` 服务发现路由
+- 下一步继续迁移租户钱包流水、支付订单等剩余租户域接口

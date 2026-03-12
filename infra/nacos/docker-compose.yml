@@ -1,0 +1,19 @@
+services:
+  nacos:
+    image: nacos/nacos-server:v2.4.1
+    container_name: chj-aigc-nacos
+    restart: unless-stopped
+    environment:
+      MODE: standalone
+      PREFER_HOST_MODE: hostname
+      NACOS_AUTH_ENABLE: "false"
+      JVM_XMS: 256m
+      JVM_XMX: 256m
+      JVM_XMN: 128m
+    ports:
+      - "8848:8848"
+      - "9848:9848"
+      - "9849:9849"
+    volumes:
+      - ./data/logs:/home/nacos/logs
+      - ./data/data:/home/nacos/data

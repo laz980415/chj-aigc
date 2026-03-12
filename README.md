@@ -38,6 +38,13 @@ Requirements:
 - Maven using local repository `E:\repository`
 - Optional Nacos server for service discovery
 
+Start local Nacos for development:
+
+```powershell
+Set-Location infra\nacos
+docker compose up -d
+```
+
 Optional environment variables:
 - `APP_DB_URL`
 - `APP_DB_USERNAME`
@@ -56,6 +63,13 @@ $env:APP_DB_PASSWORD="your-password"
 $env:NACOS_DISCOVERY_ENABLED="false"
 Set-Location backend-java
 mvn spring-boot:run "-Dmaven.repo.local=E:\repository"
+```
+
+If you want to register services into Nacos instead of local direct routing:
+
+```powershell
+$env:NACOS_DISCOVERY_ENABLED="true"
+$env:NACOS_SERVER_ADDR="127.0.0.1:8848"
 ```
 
 Run the tenant microservice skeleton:
