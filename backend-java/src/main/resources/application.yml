@@ -1,0 +1,14 @@
+server:
+  port: 8080
+
+spring:
+  application:
+    name: chj-aigc-backend
+  datasource:
+    url: ${APP_DB_URL:jdbc:postgresql://36.150.108.207:54312/chj-aigc}
+    username: ${APP_DB_USERNAME:postgres}
+    password: ${APP_DB_PASSWORD:}
+    driver-class-name: org.postgresql.Driver
+  sql:
+    init:
+      mode: never

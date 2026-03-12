@@ -11,6 +11,57 @@ For this project direction:
 - Java is the primary language for business backend services.
 - Python is used for model-provider integration and AI orchestration.
 
+## Backend Status
+
+The repository now includes a runnable Spring Boot backend shell in `backend-java`.
+
+Current API shell endpoints:
+- `GET /api/health`
+- `GET /api/db-info`
+- `GET /api/admin/summary`
+- `GET /api/admin/model-access-rules`
+- `GET /api/tenant/wallet`
+- `GET /api/tenant/quotas`
+- `GET /api/tenant/clients`
+- `GET /api/tenant/brands/{clientId}`
+- `GET /api/tenant/assets`
+
+## Run Backend
+
+Requirements:
+- JDK `21`
+- Maven using local repository `E:\repository`
+
+Optional environment variables:
+- `APP_DB_URL`
+- `APP_DB_USERNAME`
+- `APP_DB_PASSWORD`
+
+Example PowerShell session:
+
+```powershell
+$env:APP_DB_URL="jdbc:postgresql://36.150.108.207:54312/chj-aigc"
+$env:APP_DB_USERNAME="postgres"
+$env:APP_DB_PASSWORD="your-password"
+Set-Location backend-java
+mvn spring-boot:run
+```
+
+After startup, open:
+
+```text
+http://127.0.0.1:8080/api/health
+http://127.0.0.1:8080/api/admin/summary
+http://127.0.0.1:8080/api/tenant/wallet
+```
+
+Run backend tests with:
+
+```powershell
+Set-Location backend-java
+mvn test
+```
+
 The core idea is simple:
 
 - An initializer step creates durable project artifacts.
