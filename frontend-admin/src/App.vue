@@ -52,7 +52,7 @@ const loading = ref(true);
 const error = ref("");
 const success = ref("");
 
-const healthStatus = ref("loading");
+const healthStatus = ref("加载中");
 const dbInfo = ref<DbInfoPayload | null>(null);
 const summary = ref<SummaryPayload>({ policies: 0, auditEvents: 0 });
 const rules = ref<RulePayload[]>([]);
@@ -89,9 +89,9 @@ const quotaForm = reactive({
 
 const dbSummary = computed(() => {
   if (!dbInfo.value) {
-    return "Pending";
+    return "待检测";
   }
-  return dbInfo.value.passwordConfigured ? "Configured" : "Password Missing";
+  return dbInfo.value.passwordConfigured ? "已配置" : "缺少密码";
 });
 
 async function fetchJson<T>(url: string, init?: RequestInit): Promise<T> {
@@ -146,7 +146,7 @@ async function createRule() {
     },
     body: JSON.stringify(ruleForm),
   });
-  success.value = `Rule ${ruleForm.ruleId} created`;
+  success.value = `规则 ${ruleForm.ruleId} 已创建`;
   await loadDashboard();
 }
 
@@ -160,7 +160,7 @@ async function rechargeWallet() {
     },
     body: JSON.stringify(rechargeForm),
   });
-  success.value = `Wallet recharged by ${rechargeForm.amount}`;
+  success.value = `钱包已充值 ${rechargeForm.amount}`;
   await loadDashboard();
 }
 
@@ -174,7 +174,7 @@ async function saveQuota() {
     },
     body: JSON.stringify(quotaForm),
   });
-  success.value = `Quota ${quotaForm.allocationId} saved`;
+  success.value = `额度 ${quotaForm.allocationId} 已保存`;
   await loadDashboard();
 }
 
@@ -182,7 +182,7 @@ async function runAction(action: () => Promise<void>) {
   try {
     await action();
   } catch (err) {
-    error.value = err instanceof Error ? err.message : "Unknown error";
+    error.value = err instanceof Error ? err.message : "未知错误";
     loading.value = false;
   }
 }
@@ -197,19 +197,19 @@ onMounted(() => {
     <header class="hero">
       <div class="hero-copy-block">
         <p class="eyebrow">CHJ AIGC</p>
-        <h1>Admin Console</h1>
+        <h1>管理后台</h1>
         <p class="hero-copy">
-          Frontend and backend are now separated. Vue 3 handles the operator UI,
-          Spring Boot stays focused on API and domain orchestration.
+          当前采用前后端分离架构。Vue 3 负责运营后台界面，Spring Boot 负责
+          API 和业务编排。
         </p>
       </div>
       <div class="hero-status">
         <div class="status-card">
-          <span>Backend</span>
+          <span>后端服务</span>
           <strong>{{ healthStatus }}</strong>
         </div>
         <div class="status-card">
-          <span>Database</span>
+          <span>数据库</span>
           <strong>{{ dbSummary }}</strong>
         </div>
       </div>
@@ -219,28 +219,28 @@ onMounted(() => {
       <section class="panel panel-wide">
         <div class="panel-head">
           <div>
-            <p class="panel-label">Overview</p>
-            <h2>Platform Snapshot</h2>
+            <p class="panel-label">总览</p>
+            <h2>平台概览</h2>
           </div>
           <button class="action-button" type="button" @click="runAction(loadDashboard)">
-            Refresh
+            刷新
           </button>
         </div>
         <div class="stats-grid">
           <article class="stat-card">
-            <span>Policies</span>
+            <span>策略数</span>
             <strong>{{ summary.policies }}</strong>
           </article>
           <article class="stat-card">
-            <span>Audit Events</span>
+            <span>审计事件</span>
             <strong>{{ summary.auditEvents }}</strong>
           </article>
           <article class="stat-card">
-            <span>Wallet Balance</span>
+            <span>钱包余额</span>
             <strong>{{ wallet.balance }}</strong>
           </article>
           <article class="stat-card">
-            <span>User Tokens</span>
+            <span>用户 Token 剩余</span>
             <strong>{{ quotas.userTokenRemaining }}</strong>
           </article>
         </div>
@@ -249,38 +249,38 @@ onMounted(() => {
       <section class="panel">
         <div class="panel-head">
           <div>
-            <p class="panel-label">Admin</p>
-            <h2>Model Access Rules</h2>
+            <p class="panel-label">超管</p>
+            <h2>模型访问策略</h2>
           </div>
         </div>
         <form class="form-stack" @submit.prevent="runAction(createRule)">
           <div class="form-grid">
-            <input v-model="ruleForm.ruleId" placeholder="rule id" required>
-            <input v-model="ruleForm.actorId" placeholder="actor id" required>
-            <input v-model="ruleForm.platformModelAlias" placeholder="model alias" required>
+            <input v-model="ruleForm.ruleId" placeholder="规则 ID" required>
+            <input v-model="ruleForm.actorId" placeholder="操作人 ID" required>
+            <input v-model="ruleForm.platformModelAlias" placeholder="模型别名" required>
             <select v-model="ruleForm.scopeType">
-              <option value="tenant">tenant</option>
-              <option value="project">project</option>
-              <option value="role">role</option>
+              <option value="tenant">租户</option>
+              <option value="project">项目</option>
+              <option value="role">角色</option>
             </select>
-            <input v-model="ruleForm.scopeValue" placeholder="scope value" required>
+            <input v-model="ruleForm.scopeValue" placeholder="范围值" required>
             <select v-model="ruleForm.effect">
-              <option value="allow">allow</option>
-              <option value="deny">deny</option>
+              <option value="allow">允许</option>
+              <option value="deny">拒绝</option>
             </select>
-            <input v-model="ruleForm.reason" class="full-span" placeholder="reason" required>
+            <input v-model="ruleForm.reason" class="full-span" placeholder="原因说明" required>
           </div>
-          <button class="action-button" type="submit">Create Rule</button>
+          <button class="action-button" type="submit">创建规则</button>
         </form>
         <div class="table-wrap">
           <table>
             <thead>
               <tr>
-                <th>Rule</th>
-                <th>Model</th>
-                <th>Scope</th>
-                <th>Effect</th>
-                <th>Actor</th>
+                <th>规则</th>
+                <th>模型</th>
+                <th>范围</th>
+                <th>效果</th>
+                <th>操作人</th>
               </tr>
             </thead>
             <tbody>
@@ -299,45 +299,45 @@ onMounted(() => {
       <section class="panel">
         <div class="panel-head">
           <div>
-            <p class="panel-label">Tenant Finance</p>
-            <h2>Wallet And Quotas</h2>
+            <p class="panel-label">租户资金</p>
+            <h2>钱包与额度</h2>
           </div>
         </div>
         <div class="form-grid split-forms">
           <form class="form-stack" @submit.prevent="runAction(rechargeWallet)">
-            <h3>Recharge Wallet</h3>
-            <input v-model="rechargeForm.entryId" placeholder="entry id" required>
-            <input v-model="rechargeForm.amount" placeholder="amount" required>
-            <input v-model="rechargeForm.description" placeholder="description" required>
-            <input v-model="rechargeForm.referenceId" placeholder="reference id" required>
-            <button class="action-button" type="submit">Recharge</button>
+            <h3>钱包充值</h3>
+            <input v-model="rechargeForm.entryId" placeholder="流水 ID" required>
+            <input v-model="rechargeForm.amount" placeholder="充值金额" required>
+            <input v-model="rechargeForm.description" placeholder="说明" required>
+            <input v-model="rechargeForm.referenceId" placeholder="引用 ID" required>
+            <button class="action-button" type="submit">充值</button>
           </form>
 
           <form class="form-stack" @submit.prevent="runAction(saveQuota)">
-            <h3>Save Quota</h3>
-            <input v-model="quotaForm.allocationId" placeholder="allocation id" required>
+            <h3>额度配置</h3>
+            <input v-model="quotaForm.allocationId" placeholder="额度 ID" required>
             <select v-model="quotaForm.scopeType">
-              <option value="project">project</option>
-              <option value="user">user</option>
+              <option value="project">项目</option>
+              <option value="user">用户</option>
             </select>
-            <input v-model="quotaForm.scopeId" placeholder="scope id" required>
+            <input v-model="quotaForm.scopeId" placeholder="范围 ID" required>
             <select v-model="quotaForm.dimension">
-              <option value="image_count">image_count</option>
-              <option value="tokens">tokens</option>
-              <option value="video_seconds">video_seconds</option>
+              <option value="image_count">图片数量</option>
+              <option value="tokens">Token</option>
+              <option value="video_seconds">视频秒数</option>
             </select>
-            <input v-model="quotaForm.limit" placeholder="limit" required>
-            <input v-model="quotaForm.used" placeholder="used" required>
-            <button class="action-button" type="submit">Save Quota</button>
+            <input v-model="quotaForm.limit" placeholder="上限" required>
+            <input v-model="quotaForm.used" placeholder="已使用" required>
+            <button class="action-button" type="submit">保存额度</button>
           </form>
         </div>
         <div class="quota-strip">
           <div class="mini-stat">
-            <span>Project Images</span>
+            <span>项目图片额度</span>
             <strong>{{ quotas.projectImageRemaining }}</strong>
           </div>
           <div class="mini-stat">
-            <span>User Tokens</span>
+            <span>用户 Token 额度</span>
             <strong>{{ quotas.userTokenRemaining }}</strong>
           </div>
         </div>
@@ -346,13 +346,13 @@ onMounted(() => {
       <section class="panel">
         <div class="panel-head">
           <div>
-            <p class="panel-label">Brand Grounding</p>
-            <h2>Clients And Assets</h2>
+            <p class="panel-label">品牌约束</p>
+            <h2>客户与素材</h2>
           </div>
         </div>
         <div class="assets-layout">
           <div>
-            <h3>Clients</h3>
+            <h3>客户列表</h3>
             <ul class="card-list">
               <li v-for="client in clients" :key="client.id">
                 <strong>{{ client.name }}</strong>
@@ -361,7 +361,7 @@ onMounted(() => {
             </ul>
           </div>
           <div>
-            <h3>Assets</h3>
+            <h3>素材列表</h3>
             <ul class="card-list">
               <li v-for="asset in assets" :key="asset.id">
                 <strong>{{ asset.name }}</strong>
@@ -374,10 +374,10 @@ onMounted(() => {
     </main>
 
     <footer class="footer-bar">
-      <span v-if="loading">Loading dashboard...</span>
+      <span v-if="loading">页面加载中...</span>
       <span v-else-if="error" class="error-text">{{ error }}</span>
       <span v-else-if="success" class="success-text">{{ success }}</span>
-      <span v-else>Ready</span>
+      <span v-else>系统已就绪</span>
     </footer>
   </div>
 </template>

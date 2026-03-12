@@ -1,8 +1,9 @@
 package com.chj.aigc.web;
 
 import com.chj.aigc.access.AccessScopeType;
+import com.chj.aigc.access.ModelAccessAdminStore;
 import com.chj.aigc.access.ModelAccessEffect;
-import com.chj.aigc.access.ModelAccessPolicyEngine;
+import com.chj.aigc.access.ModelAccessAuditEvent;
 import com.chj.aigc.access.ModelAccessRule;
 import com.chj.aigc.access.ModelAccessScope;
 import com.chj.aigc.web.dto.CreateModelAccessRuleRequest;
@@ -18,11 +19,11 @@ import org.springframework.web.bind.annotation.RestController;
 @RestController
 @RequestMapping("/api/admin")
 public class AdminApiController {
-    private final ModelAccessPolicyEngine policyEngine;
+    private final ModelAccessAdminStore store;
 
-    public AdminApiController(ModelAccessPolicyEngine policyEngine) {
-        this.policyEngine = policyEngine;
-        if (policyEngine.rules().isEmpty()) {
+    public AdminApiController(ModelAccessAdminStore store) {
+        this.store = store;
+        if (store.listRules().isEmpty()) {
             ModelAccessRule seedRule = new ModelAccessRule(
                     "rule-seed-1",
                     "copy-standard",
@@ -33,22 +34,31 @@ public class AdminApiController {
                     Instant.now(),
                     "Seed rule for demo tenant"
             );
-            policyEngine.addRule(seedRule);
-            policyEngine.recordRuleCreated("audit-seed-1", "system", seedRule);
+            store.saveRule(seedRule);
+            store.saveAuditEvent(new ModelAccessAuditEvent(
+                    "audit-seed-1",
+                    "system",
+                    "RULE_CREATED",
+                    seedRule.platformModelAlias(),
+                    seedRule.scope().type().name(),
+                    seedRule.scope().value(),
+                    seedRule.reason(),
+                    Instant.now()
+            ));
         }
     }
 
     @GetMapping("/summary")
     public Map<String, Object> summary() {
         return Map.of(
-                "policies", policyEngine.rules().size(),
-                "auditEvents", policyEngine.auditEvents().size()
+                "policies", store.listRules().size(),
+                "auditEvents", store.listAuditEvents().size()
         );
     }
 
     @GetMapping("/model-access-rules")
     public List<ModelAccessRule> modelAccessRules() {
-        return policyEngine.rules();
+        return store.listRules();
     }
 
     @PostMapping("/model-access-rules")
@@ -66,8 +76,17 @@ public class AdminApiController {
                 Instant.now(),
                 request.reason()
         );
-        policyEngine.addRule(rule);
-        policyEngine.recordRuleCreated("audit-" + request.ruleId(), request.actorId(), rule);
+        store.saveRule(rule);
+        store.saveAuditEvent(new ModelAccessAuditEvent(
+                "audit-" + request.ruleId(),
+                request.actorId(),
+                "RULE_CREATED",
+                rule.platformModelAlias(),
+                rule.scope().type().name(),
+                rule.scope().value(),
+                rule.reason(),
+                Instant.now()
+        ));
         return rule;
     }
 }
