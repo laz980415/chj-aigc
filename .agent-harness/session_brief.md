@@ -4,22 +4,22 @@ Project: AIGC Advertising SaaS Platform
 
 ## Status Snapshot
 
-- Pending: 5
+- Pending: 4
 - In progress: 1
 - Blocked: 0
-- Done: 6
+- Done: 7
 
 ## Recommended Next Feature
 
-- ID: feature-007
-- Title: Implement brand, client, and asset library domain
+- ID: feature-008
+- Title: Implement grounded prompt assembly for brand-safe generation
 - State: in_progress
-- Description: Support advertiser clients, their brands, and brand-scoped assets and rules inside each tenant.
-- Depends on: feature-002
+- Description: Implement Python-side prompt assembly from user input, project context, brand rules, and selected assets so output follows brand constraints.
+- Depends on: feature-003, feature-007
 - Acceptance criteria:
-  - Tenant can manage clients and brands
-  - Assets can be tagged to tenant, project, client, and brand
-  - Brand rules support style guidance and forbidden statements
+  - Generation requests can reference brand and selected assets
+  - Prompt assembly injects brand guidance and forbidden terms
+  - Prompt context generation is traceable for audit
 
 ## Session Rules
 

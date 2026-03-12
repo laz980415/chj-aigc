@@ -31,3 +31,6 @@ Validation: Ran mvn test in backend-java and python -m unittest discover -s test
 Implemented Java-side model access control with scoped allow/deny rules for tenants, projects, and roles, plus deterministic policy evaluation and audit events for rule creation and disable actions.
 
 Validation: Ran mvn test in backend-java and python -m unittest discover -s tests -v; Java tests verified project-over-tenant precedence, role-based grants, default deny behavior, and audit event creation.
+
+## 2026-03-12T05:01:27+00:00 - feature-007 - Implement brand, client, and asset library domain
+Implemented the Java asset-library domain with clients, brands, brand rules, assets, brand profile aggregation, and asset filtering by tenant, project, client, brand, kind, and tags.
