@@ -1,13 +1,19 @@
 package com.chj.aigc.web;
 
+import com.chj.aigc.auth.AuthInterceptor;
+import com.chj.aigc.auth.AuthService;
+import com.chj.aigc.auth.AuthStore;
+import com.chj.aigc.auth.InMemoryAuthStore;
+import com.chj.aigc.auth.JdbcAuthStore;
 import com.chj.aigc.access.ModelAccessPolicyEngine;
 import com.chj.aigc.access.ModelAccessAdminStore;
 import com.chj.aigc.access.InMemoryModelAccessAdminStore;
 import com.chj.aigc.access.JdbcModelAccessAdminStore;
+import org.springframework.beans.factory.ObjectProvider;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
-import org.springframework.beans.factory.ObjectProvider;
 import org.springframework.jdbc.core.JdbcTemplate;
+import org.springframework.web.servlet.config.annotation.InterceptorRegistry;
 import org.springframework.web.servlet.config.annotation.CorsRegistry;
 import org.springframework.web.servlet.config.annotation.WebMvcConfigurer;
 
@@ -28,7 +34,26 @@ public class ApplicationConfig {
     }
 
     @Bean
-    public WebMvcConfigurer corsConfigurer() {
+    public AuthStore authStore(ObjectProvider<JdbcTemplate> jdbcTemplateProvider) {
+        JdbcTemplate jdbcTemplate = jdbcTemplateProvider.getIfAvailable();
+        if (jdbcTemplate != null) {
+            return new JdbcAuthStore(jdbcTemplate);
+        }
+        return new InMemoryAuthStore();
+    }
+
+    @Bean
+    public AuthService authService(AuthStore authStore) {
+        return new AuthService(authStore);
+    }
+
+    @Bean
+    public AuthInterceptor authInterceptor(AuthService authService) {
+        return new AuthInterceptor(authService);
+    }
+
+    @Bean
+    public WebMvcConfigurer webMvcConfigurer(AuthInterceptor authInterceptor) {
         return new WebMvcConfigurer() {
             @Override
             public void addCorsMappings(CorsRegistry registry) {
@@ -39,6 +64,12 @@ public class ApplicationConfig {
                         )
                         .allowedMethods("GET", "POST", "PUT", "DELETE", "OPTIONS")
                         .allowedHeaders("*");
+            }
+
+            @Override
+            public void addInterceptors(InterceptorRegistry registry) {
+                registry.addInterceptor(authInterceptor)
+                        .addPathPatterns("/api/**");
             }
         };
     }

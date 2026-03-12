@@ -20,3 +20,24 @@ create table if not exists model_access_audit_events (
     detail text not null,
     created_at timestamp with time zone not null
 );
+
+create table if not exists auth_users (
+    id varchar(128) primary key,
+    username varchar(128) not null unique,
+    password varchar(255) not null,
+    display_name varchar(128) not null,
+    role_key varchar(64) not null,
+    tenant_id varchar(128),
+    active boolean not null
+);
+
+create table if not exists auth_sessions (
+    token varchar(128) primary key,
+    user_id varchar(128) not null,
+    username varchar(128) not null,
+    display_name varchar(128) not null,
+    role_key varchar(64) not null,
+    tenant_id varchar(128),
+    created_at timestamp with time zone not null,
+    expires_at timestamp with time zone not null
+);

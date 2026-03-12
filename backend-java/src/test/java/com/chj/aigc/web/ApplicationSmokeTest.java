@@ -29,6 +29,28 @@ class ApplicationSmokeTest {
     @Autowired
     private ObjectMapper objectMapper;
 
+    private String loginAsAdmin() throws Exception {
+        String loginBody = """
+                {
+                  "username": "admin",
+                  "password": "Admin@123"
+                }
+                """;
+
+        MvcResult result = mockMvc.perform(post("/api/auth/login")
+                        .contentType("application/json")
+                        .content(loginBody))
+                .andExpect(status().isOk())
+                .andReturn();
+
+        Map<String, Object> payload = objectMapper.readValue(
+                result.getResponse().getContentAsByteArray(),
+                new TypeReference<>() {
+                }
+        );
+        return String.valueOf(payload.get("token"));
+    }
+
     @Test
     void healthEndpointReturnsOk() throws Exception {
         MvcResult result = mockMvc.perform(get("/api/health"))
@@ -45,7 +67,10 @@ class ApplicationSmokeTest {
 
     @Test
     void tenantEndpointsReturnSeedData() throws Exception {
-        MvcResult walletResult = mockMvc.perform(get("/api/tenant/wallet"))
+        String token = loginAsAdmin();
+
+        MvcResult walletResult = mockMvc.perform(get("/api/tenant/wallet")
+                        .header("X-Auth-Token", token))
                 .andExpect(status().isOk())
                 .andReturn();
         Map<String, Object> wallet = objectMapper.readValue(
@@ -55,7 +80,8 @@ class ApplicationSmokeTest {
         );
         assertEquals("tenant-demo", wallet.get("tenantId"));
 
-        MvcResult clientsResult = mockMvc.perform(get("/api/tenant/clients"))
+        MvcResult clientsResult = mockMvc.perform(get("/api/tenant/clients")
+                        .header("X-Auth-Token", token))
                 .andExpect(status().isOk())
                 .andReturn();
         List<Map<String, Object>> clients = objectMapper.readValue(
@@ -84,6 +110,8 @@ class ApplicationSmokeTest {
 
     @Test
     void adminAndTenantMutationEndpointsWork() throws Exception {
+        String token = loginAsAdmin();
+
         String createRuleBody = """
                 {
                   "ruleId": "rule-created-1",
@@ -97,6 +125,7 @@ class ApplicationSmokeTest {
                 """;
 
         mockMvc.perform(post("/api/admin/model-access-rules")
+                        .header("X-Auth-Token", token)
                         .contentType("application/json")
                         .content(createRuleBody))
                 .andExpect(status().isOk());
@@ -111,6 +140,7 @@ class ApplicationSmokeTest {
                 """;
 
         MvcResult walletResult = mockMvc.perform(post("/api/tenant/wallet/recharge")
+                        .header("X-Auth-Token", token)
                         .contentType("application/json")
                         .content(rechargeBody))
                 .andExpect(status().isOk())
@@ -134,6 +164,7 @@ class ApplicationSmokeTest {
                 """;
 
         MvcResult quotaResult = mockMvc.perform(post("/api/tenant/quotas")
+                        .header("X-Auth-Token", token)
                         .contentType("application/json")
                         .content(quotaBody))
                 .andExpect(status().isOk())
@@ -144,5 +175,23 @@ class ApplicationSmokeTest {
                 }
         );
         assertEquals("48800", String.valueOf(quotas.get("userTokenRemaining")));
+    }
+
+    @Test
+    void loginAndMeEndpointWork() throws Exception {
+        String token = loginAsAdmin();
+
+        MvcResult meResult = mockMvc.perform(get("/api/auth/me")
+                        .header("X-Auth-Token", token))
+                .andExpect(status().isOk())
+                .andReturn();
+
+        Map<String, Object> me = objectMapper.readValue(
+                meResult.getResponse().getContentAsByteArray(),
+                new TypeReference<>() {
+                }
+        );
+        assertEquals("admin", me.get("username"));
+        assertEquals("platform_super_admin", me.get("roleKey"));
     }
 }

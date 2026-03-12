@@ -48,9 +48,19 @@ type DbInfoPayload = {
   passwordConfigured: boolean;
 };
 
+type SessionPayload = {
+  token: string;
+  username: string;
+  displayName: string;
+  roleKey: string;
+  tenantId: string | null;
+  expiresAt: string;
+};
+
 const loading = ref(true);
 const error = ref("");
 const success = ref("");
+const isAuthenticated = ref(false);
 
 const healthStatus = ref("加载中");
 const dbInfo = ref<DbInfoPayload | null>(null);
@@ -60,6 +70,12 @@ const wallet = ref<WalletPayload>({ tenantId: "tenant-demo", balance: "0", ledge
 const quotas = ref<QuotaPayload>({ projectImageRemaining: "0", userTokenRemaining: "0" });
 const clients = ref<ClientPayload[]>([]);
 const assets = ref<AssetPayload[]>([]);
+const session = ref<SessionPayload | null>(null);
+
+const loginForm = reactive({
+  username: "admin",
+  password: "Admin@123",
+});
 
 const ruleForm = reactive({
   ruleId: "rule-ui-1",
@@ -95,7 +111,15 @@ const dbSummary = computed(() => {
 });
 
 async function fetchJson<T>(url: string, init?: RequestInit): Promise<T> {
-  const response = await fetch(url, init);
+  const token = localStorage.getItem("chj_aigc_token");
+  const headers = new Headers(init?.headers ?? {});
+  if (token) {
+    headers.set("X-Auth-Token", token);
+  }
+  const response = await fetch(url, {
+    ...init,
+    headers,
+  });
   if (!response.ok) {
     throw new Error(`Request failed: ${response.status}`);
   }
@@ -134,6 +158,60 @@ async function loadDashboard() {
   clients.value = clientPayload;
   assets.value = assetPayload;
   loading.value = false;
+}
+
+async function login() {
+  loading.value = true;
+  error.value = "";
+  success.value = "";
+
+  const response = await fetch("/api/auth/login", {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json",
+    },
+    body: JSON.stringify(loginForm),
+  });
+  if (!response.ok) {
+    throw new Error("登录失败，请检查账号密码");
+  }
+
+  const payload = await response.json() as SessionPayload;
+  localStorage.setItem("chj_aigc_token", payload.token);
+  session.value = payload;
+  isAuthenticated.value = true;
+  success.value = `欢迎，${payload.displayName}`;
+  await loadDashboard();
+}
+
+async function bootstrap() {
+  const token = localStorage.getItem("chj_aigc_token");
+  if (!token) {
+    loading.value = false;
+    isAuthenticated.value = false;
+    return;
+  }
+
+  try {
+    const me = await fetchJson<Omit<SessionPayload, "token">>("/api/auth/me");
+    session.value = {
+      ...me,
+      token,
+    };
+    isAuthenticated.value = true;
+    await loadDashboard();
+  } catch {
+    localStorage.removeItem("chj_aigc_token");
+    isAuthenticated.value = false;
+    loading.value = false;
+  }
+}
+
+function logout() {
+  localStorage.removeItem("chj_aigc_token");
+  session.value = null;
+  isAuthenticated.value = false;
+  success.value = "";
 }
 
 async function createRule() {
@@ -188,12 +266,29 @@ async function runAction(action: () => Promise<void>) {
 }
 
 onMounted(() => {
-  runAction(loadDashboard);
+  runAction(bootstrap);
 });
 </script>
 
 <template>
   <div class="page-shell">
+    <section v-if="!isAuthenticated" class="login-panel">
+      <div class="login-card">
+        <p class="eyebrow">CHJ AIGC</p>
+        <h1>后台登录</h1>
+        <p class="hero-copy">先完成登录，再进入超管与租户后台。</p>
+        <form class="form-stack" @submit.prevent="runAction(login)">
+          <input v-model="loginForm.username" placeholder="用户名" required>
+          <input v-model="loginForm.password" type="password" placeholder="密码" required>
+          <button class="action-button full-button" type="submit">登录系统</button>
+        </form>
+        <div class="login-tip">
+          演示超管账号：admin / Admin@123
+        </div>
+      </div>
+    </section>
+
+    <template v-else>
     <header class="hero">
       <div class="hero-copy-block">
         <p class="eyebrow">CHJ AIGC</p>
@@ -204,6 +299,14 @@ onMounted(() => {
         </p>
       </div>
       <div class="hero-status">
+        <div class="status-card">
+          <span>当前账号</span>
+          <strong>{{ session?.displayName }}</strong>
+        </div>
+        <div class="status-card">
+          <span>角色</span>
+          <strong>{{ session?.roleKey }}</strong>
+        </div>
         <div class="status-card">
           <span>后端服务</span>
           <strong>{{ healthStatus }}</strong>
@@ -222,9 +325,14 @@ onMounted(() => {
             <p class="panel-label">总览</p>
             <h2>平台概览</h2>
           </div>
-          <button class="action-button" type="button" @click="runAction(loadDashboard)">
-            刷新
-          </button>
+          <div class="panel-actions">
+            <button class="action-button" type="button" @click="runAction(loadDashboard)">
+              刷新
+            </button>
+            <button class="action-button secondary-button" type="button" @click="logout">
+              退出登录
+            </button>
+          </div>
         </div>
         <div class="stats-grid">
           <article class="stat-card">
@@ -379,5 +487,6 @@ onMounted(() => {
       <span v-else-if="success" class="success-text">{{ success }}</span>
       <span v-else>系统已就绪</span>
     </footer>
+    </template>
   </div>
 </template>
