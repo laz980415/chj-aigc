@@ -146,6 +146,26 @@ Set-Location E:\ai-workspaces\infra\nacos
 - 详细拆分说明在 [database-split-plan.md](/e:/ai-workspaces/docs/database-split-plan.md)
 
 现阶段平台服务的 `schema.sql` 已经只保留平台侧仍然依赖的表，不再创建项目、额度、客户、品牌、素材这些租户工作台表。
+
+## 日志链路规范
+
+当前网关、平台服务、租户服务已经统一采用 `X-Trace-Id` 作为链路追踪头：
+
+- 网关负责生成或透传 `X-Trace-Id`
+- 网关会把 `X-Trace-Id` 继续传给下游服务
+- 平台服务和租户服务会把 `X-Trace-Id` 写回响应头
+- 平台服务和租户服务日志会输出 `traceId`
+
+后续新增服务必须遵守同一套规则，包括但不限于：
+
+- Python 模型服务
+- 后续独立身份认证服务
+- 任何新建的 Java 微服务
+
+也就是说，后续所有服务都要满足两点：
+
+1. 能接收并透传 `X-Trace-Id`
+2. 核心请求日志必须带 `traceId`
 为了兼容联调和逐步迁移，仍保留显式实验入口：
 
 - `/tenant-api/**` -> `backend-tenant-service`

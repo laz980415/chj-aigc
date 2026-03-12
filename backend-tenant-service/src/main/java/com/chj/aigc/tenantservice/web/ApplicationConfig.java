@@ -25,6 +25,7 @@ import javax.sql.DataSource;
 import org.apache.ibatis.session.SqlSessionFactory;
 import org.mybatis.spring.SqlSessionTemplate;
 import org.springframework.beans.factory.annotation.Value;
+import org.springframework.boot.web.servlet.FilterRegistrationBean;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.core.io.ClassPathResource;
@@ -124,6 +125,15 @@ public class ApplicationConfig {
     @Bean
     public AuthInterceptor authInterceptor(AuthService authService, ObjectMapper objectMapper) {
         return new AuthInterceptor(authService, objectMapper);
+    }
+
+    @Bean
+    public FilterRegistrationBean<TraceContextFilter> traceContextFilterRegistration() {
+        FilterRegistrationBean<TraceContextFilter> registration = new FilterRegistrationBean<>();
+        registration.setFilter(new TraceContextFilter());
+        registration.setOrder(Integer.MIN_VALUE);
+        registration.addUrlPatterns("/*");
+        return registration;
     }
 
     @Bean

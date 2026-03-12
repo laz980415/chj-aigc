@@ -3,6 +3,7 @@ package com.chj.aigc.web;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.header;
 
 import com.chj.aigc.Application;
 import com.chj.aigc.auth.AuthService;
@@ -24,6 +25,8 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 @SpringBootTest(classes = Application.class)
 @AutoConfigureMockMvc
 class ApplicationSmokeTest {
+    private static final String TRACE_HEADER = "X-Trace-Id";
+
 
     @Autowired
     private MockMvc mockMvc;
@@ -51,6 +54,7 @@ class ApplicationSmokeTest {
     @Test
     void healthEndpointReturnsOk() throws Exception {
         MvcResult result = mockMvc.perform(get("/api/health"))
+                .andExpect(header().exists(TRACE_HEADER))
                 .andExpect(status().isOk())
                 .andReturn();
 

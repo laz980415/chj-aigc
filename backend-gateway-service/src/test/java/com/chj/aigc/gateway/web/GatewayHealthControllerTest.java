@@ -14,6 +14,8 @@ import org.springframework.test.web.reactive.server.WebTestClient;
 @SpringBootTest(classes = GatewayApplication.class, webEnvironment = SpringBootTest.WebEnvironment.RANDOM_PORT)
 @ActiveProfiles("test")
 class GatewayHealthControllerTest {
+    private static final String TRACE_HEADER = "X-Trace-Id";
+
     @LocalServerPort
     private int port;
 
@@ -26,6 +28,7 @@ class GatewayHealthControllerTest {
                 .uri("http://127.0.0.1:" + port + "/gateway/health")
                 .exchange()
                 .expectStatus().isOk()
+                .expectHeader().exists(TRACE_HEADER)
                 .expectBody()
                 .jsonPath("$.status").isEqualTo("ok")
                 .jsonPath("$.service").isEqualTo("gateway-service");

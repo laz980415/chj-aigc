@@ -424,6 +424,10 @@
         {
           "at": "2026-03-12T08:40:00+00:00",
           "note": "Prepared PostgreSQL split-database configuration by separating platform schema ownership, adding create-microservice-databases.sql, and documenting the remaining auth-table dependency that still blocks a full physical split."
+        },
+        {
+          "at": "2026-03-12T08:58:00+00:00",
+          "note": "Added `X-Trace-Id` propagation and request tracing logs for gateway, platform service, and tenant service. Future services must follow the same trace-header and logging convention."
         }
       ]
     },
@@ -470,6 +474,29 @@
         {
           "at": "2026-03-12T08:40:00+00:00",
           "note": "Physical PostgreSQL split is not complete yet because both platform and tenant flows still depend on auth_users and auth_sessions. Add a dedicated identity ownership step before switching both services to separate databases."
+        }
+      ]
+    },
+    {
+      "id": "feature-018",
+      "title": "Standardize trace logging for all future services",
+      "description": "Ensure every new service, including Python model services and future Java microservices, participates in the same request trace convention based on X-Trace-Id propagation and structured request logs.",
+      "acceptance_criteria": [
+        "Every new service accepts and propagates X-Trace-Id",
+        "Every new service writes request logs with traceId and duration",
+        "Cross-service troubleshooting can correlate gateway, business service, and model-service logs by traceId"
+      ],
+      "depends_on": [
+        "feature-014",
+        "feature-015"
+      ],
+      "state": "pending",
+      "created_at": "2026-03-12T08:58:00+00:00",
+      "updated_at": "2026-03-12T08:58:00+00:00",
+      "session_notes": [
+        {
+          "at": "2026-03-12T08:58:00+00:00",
+          "note": "User requires all later services to keep the same trace logging convention. Extend X-Trace-Id propagation and request-duration logging to Python model services and any future Java services."
         }
       ]
     }

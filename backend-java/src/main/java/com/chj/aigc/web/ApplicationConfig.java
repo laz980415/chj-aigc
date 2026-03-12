@@ -25,6 +25,7 @@ import org.mybatis.spring.SqlSessionTemplate;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnMissingBean;
 import org.springframework.beans.factory.ObjectProvider;
+import org.springframework.boot.web.servlet.FilterRegistrationBean;
 import org.springframework.context.annotation.DependsOn;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
@@ -130,6 +131,15 @@ public class ApplicationConfig {
     @Bean
     public AuthInterceptor authInterceptor(AuthService authService) {
         return new AuthInterceptor(authService);
+    }
+
+    @Bean
+    public FilterRegistrationBean<TraceContextFilter> traceContextFilterRegistration() {
+        FilterRegistrationBean<TraceContextFilter> registration = new FilterRegistrationBean<>();
+        registration.setFilter(new TraceContextFilter());
+        registration.setOrder(Integer.MIN_VALUE);
+        registration.addUrlPatterns("/*");
+        return registration;
     }
 
     @Bean

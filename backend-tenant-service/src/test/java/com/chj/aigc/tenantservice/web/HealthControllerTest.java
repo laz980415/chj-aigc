@@ -1,6 +1,7 @@
 package com.chj.aigc.tenantservice.web;
 
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
+import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.header;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
@@ -17,6 +18,8 @@ import org.springframework.test.web.servlet.MockMvc;
 @SpringBootTest(classes = TenantServiceApplication.class)
 @AutoConfigureMockMvc
 class HealthControllerTest {
+    private static final String TRACE_HEADER = "X-Trace-Id";
+
     @Autowired
     private MockMvc mockMvc;
 
@@ -24,6 +27,7 @@ class HealthControllerTest {
     void healthEndpointReturnsTenantServiceName() throws Exception {
         mockMvc.perform(get("/api/health"))
                 .andExpect(status().isOk())
+                .andExpect(header().exists(TRACE_HEADER))
                 .andExpect(jsonPath("$.code").value(0))
                 .andExpect(jsonPath("$.data.service").value("tenant-service"));
     }
