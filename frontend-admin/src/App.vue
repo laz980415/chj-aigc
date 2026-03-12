@@ -1,7 +1,7 @@
 <script setup lang="ts">
 /**
  * 管理后台单页入口。
- * 当前按登录角色动态渲染平台后台和租户后台，覆盖充值、模型策略、项目、成员、客户和素材等核心能力。
+ * 当前按登录角色动态渲染平台后台和租户后台，并通过左侧主菜单和顶部页签切分页面，避免整屏堆叠成演示页。
  */
 import { computed, onBeforeUnmount, onMounted, reactive, ref } from "vue";
 
@@ -70,6 +70,16 @@ type AssetPayload = {
   tags: string[];
 };
 
+type TenantOverviewPayload = {
+  tenantId: string;
+  displayName: string;
+  memberCount: number;
+  ownerCount: number;
+  activeMemberCount: number;
+  walletBalance: string;
+  ledgerCount: number;
+};
+
 type DbInfoPayload = {
   url: string;
   username: string;
@@ -101,16 +111,31 @@ type ApiResponse<T> = {
   data: T;
 };
 
+type WorkspaceTab = {
+  key: string;
+  label: string;
+};
+
+type WorkspaceMenu = {
+  key: string;
+  label: string;
+  badge: string;
+  tabs: WorkspaceTab[];
+};
+
 const loading = ref(true);
 const error = ref("");
 const success = ref("");
 const isAuthenticated = ref(false);
 const currentPath = ref(window.location.pathname || "/");
+const activeMenuKey = ref("");
+const activeTabKey = ref("");
 
 const healthStatus = ref("加载中");
 const dbInfo = ref<DbInfoPayload | null>(null);
 const summary = ref<SummaryPayload>({ policies: 0, auditEvents: 0, users: 0 });
 const rules = ref<RulePayload[]>([]);
+const tenants = ref<TenantOverviewPayload[]>([]);
 const wallet = ref<WalletPayload>({ tenantId: "tenant-demo", balance: "0", ledgerCount: 0 });
 const quotas = ref<QuotaPayload>({ projectImageRemaining: "0", userTokenRemaining: "0" });
 const quotaAllocations = ref<QuotaAllocationPayload[]>([]);
@@ -136,7 +161,7 @@ const ruleForm = reactive({
   scopeType: "tenant",
   scopeValue: "tenant-demo",
   effect: "allow",
-  reason: "Created from Vue admin console",
+  reason: "由平台后台创建",
 });
 
 const userForm = reactive({
@@ -151,7 +176,7 @@ const userForm = reactive({
 const rechargeForm = reactive({
   entryId: "recharge-ui-1",
   amount: "100.00",
-  description: "manual recharge",
+  description: "后台人工充值",
   referenceId: "dashboard",
 });
 
@@ -211,6 +236,65 @@ const quotaScopeOptions = computed(() => quotaForm.scopeType === "project"
   : members.value.map((member) => ({ value: member.id, label: `${member.displayName} (${member.username})` })));
 const projectNameMap = computed(() => new Map(projects.value.map((project) => [project.id, project.name])));
 const memberNameMap = computed(() => new Map(members.value.map((member) => [member.id, `${member.displayName} (${member.username})`])));
+const workspaceMenus = computed<WorkspaceMenu[]>(() => isPlatformAdmin.value
+  ? [
+    {
+      key: "platform-dashboard",
+      label: "平台总览",
+      badge: String(summary.value.users),
+      tabs: [
+        { key: "overview", label: "运营概览" },
+        { key: "tenants", label: "租户总览" },
+      ],
+    },
+    {
+      key: "platform-manage",
+      label: "平台管理",
+      badge: String(summary.value.policies),
+      tabs: [
+        { key: "accounts", label: "账号角色" },
+        { key: "policies", label: "模型策略" },
+      ],
+    },
+    {
+      key: "platform-finance",
+      label: "租户运营",
+      badge: wallet.value.balance,
+      tabs: [
+        { key: "finance", label: "租户充值" },
+      ],
+    },
+  ]
+  : [
+    {
+      key: "tenant-dashboard",
+      label: "租户总览",
+      badge: String(projects.value.length),
+      tabs: [
+        { key: "overview", label: "工作台概览" },
+        { key: "finance", label: "钱包额度" },
+      ],
+    },
+    {
+      key: "tenant-collaboration",
+      label: "项目协作",
+      badge: String(members.value.length),
+      tabs: [
+        { key: "members", label: "项目成员" },
+      ],
+    },
+    {
+      key: "tenant-assets",
+      label: "品牌资产",
+      badge: String(brands.value.length),
+      tabs: [
+        { key: "assets", label: "客户素材" },
+      ],
+    },
+  ]);
+const activeMenu = computed(() => workspaceMenus.value.find((menu) => menu.key === activeMenuKey.value) ?? workspaceMenus.value[0] ?? null);
+const activeTabs = computed(() => activeMenu.value?.tabs ?? []);
+const activeTab = computed(() => activeTabs.value.find((tab) => tab.key === activeTabKey.value) ?? activeTabs.value[0] ?? null);
 
 // 统一附带令牌访问 API，失败时直接抛错交给页面底部状态栏展示。
 async function fetchJson<T>(url: string, init?: RequestInit): Promise<T> {
@@ -226,9 +310,9 @@ async function fetchJson<T>(url: string, init?: RequestInit): Promise<T> {
   if (!response.ok) {
     try {
       const payload = await response.json() as ApiResponse<unknown>;
-      throw new Error(payload.message || `Request failed: ${response.status}`);
+      throw new Error(payload.message || `请求失败：${response.status}`);
     } catch {
-      throw new Error(`Request failed: ${response.status}`);
+      throw new Error(`请求失败：${response.status}`);
     }
   }
   const payload = await response.json() as ApiResponse<T> | T;
@@ -251,6 +335,7 @@ async function loadDashboard() {
   users.value = [];
   members.value = [];
   rules.value = [];
+  tenants.value = [];
   wallet.value = { tenantId: "tenant-demo", balance: "0", ledgerCount: 0 };
   quotas.value = { projectImageRemaining: "0", userTokenRemaining: "0" };
   quotaAllocations.value = [];
@@ -268,18 +353,20 @@ async function loadDashboard() {
   dbInfo.value = dbPayload;
 
   if (isPlatformAdmin.value) {
-    const [summaryPayload, rolePayload, userPayload, rulePayload, walletPayload] = await Promise.all([
+    const [summaryPayload, rolePayload, userPayload, rulePayload, walletPayload, tenantPayload] = await Promise.all([
       fetchJson<SummaryPayload>("/api/admin/summary"),
       fetchJson<string[]>("/api/admin/roles"),
       fetchJson<UserPayload[]>("/api/admin/users"),
       fetchJson<RulePayload[]>("/api/admin/model-access-rules"),
       fetchJson<WalletPayload>("/api/tenant/wallet"),
+      fetchJson<TenantOverviewPayload[]>("/api/admin/tenants"),
     ]);
     summary.value = summaryPayload;
     roles.value = rolePayload;
     users.value = userPayload;
     rules.value = rulePayload;
     wallet.value = walletPayload;
+    tenants.value = tenantPayload;
   }
 
   if (canViewTenantWorkspace.value) {
@@ -305,6 +392,7 @@ async function loadDashboard() {
 
   syncMemberRoleDrafts();
   syncQuotaScope();
+  syncWorkspaceNavigation();
   loading.value = false;
 }
 
@@ -574,6 +662,32 @@ function syncMemberRoleDrafts() {
   });
 }
 
+function syncWorkspaceNavigation() {
+  const menus = workspaceMenus.value;
+  if (menus.length === 0) {
+    activeMenuKey.value = "";
+    activeTabKey.value = "";
+    return;
+  }
+  const menu = menus.find((item) => item.key === activeMenuKey.value) ?? menus[0]!;
+  activeMenuKey.value = menu.key;
+  const tab = menu.tabs.find((item) => item.key === activeTabKey.value) ?? menu.tabs[0]!;
+  activeTabKey.value = tab.key;
+}
+
+function selectMenu(menuKey: string) {
+  const menu = workspaceMenus.value.find((item) => item.key === menuKey);
+  if (!menu) {
+    return;
+  }
+  activeMenuKey.value = menu.key;
+  activeTabKey.value = menu.tabs[0]?.key ?? "";
+}
+
+function selectTab(tabKey: string) {
+  activeTabKey.value = tabKey;
+}
+
 function navigate(path: string, replace = false) {
   if (replace) {
     window.history.replaceState({}, "", path);
@@ -599,113 +713,172 @@ onBeforeUnmount(() => {
 
 <template>
   <div class="page-shell">
-    <section v-if="showLoginView" class="login-panel">
-      <div class="login-card">
-        <p class="eyebrow">CHJ AIGC</p>
-        <h1>后台登录</h1>
-        <p class="hero-copy">先完成登录，再进入超管与租户后台。</p>
-        <form class="form-stack" @submit.prevent="runAction(login)">
-          <input v-model="loginForm.username" placeholder="用户名" required>
-          <input v-model="loginForm.password" type="password" placeholder="密码" required>
-          <button class="action-button full-button" type="submit">登录系统</button>
-        </form>
-        <div class="login-tip">
-          演示账号：admin / Admin@123，tenant_owner / Tenant@123，tenant_member / Member@123
+    <section v-if="showLoginView" class="login-shell">
+      <div class="login-hero">
+        <div class="login-copy">
+          <p class="eyebrow">CHJ AIGC PLATFORM</p>
+          <h1>多租户 AIGC 运营平台</h1>
+          <p class="hero-copy">平台超管管理租户与模型，租户负责人管理项目、成员与品牌资产。</p>
+        </div>
+        <div class="login-card">
+          <p class="eyebrow">后台登录</p>
+          <h2>进入工作台</h2>
+          <form class="form-stack" @submit.prevent="runAction(login)">
+            <input v-model="loginForm.username" placeholder="用户名" required>
+            <input v-model="loginForm.password" type="password" placeholder="密码" required>
+            <button class="action-button full-button" type="submit">登录系统</button>
+          </form>
+          <div class="login-tip">
+            演示账号：admin / Admin@123，tenant_owner / Tenant@123，tenant_member / Member@123
+          </div>
         </div>
       </div>
     </section>
 
-    <template v-else>
-    <header class="hero">
-      <div class="hero-copy-block">
-        <p class="eyebrow">CHJ AIGC</p>
-        <h1>{{ workspaceTitle }}</h1>
-        <p class="hero-copy">
-          {{ workspaceCopy }}
-        </p>
-      </div>
-      <div class="hero-status">
-        <div class="status-card">
+    <div v-else class="workspace-shell">
+      <aside class="sidebar">
+        <div class="sidebar-brand">
+          <p class="eyebrow">CHJ AIGC</p>
+          <h2>{{ workspaceTitle }}</h2>
+          <p class="sidebar-copy">{{ workspaceCopy }}</p>
+        </div>
+        <div class="sidebar-user">
           <span>当前账号</span>
           <strong>{{ session?.displayName }}</strong>
+          <small>{{ session?.roleKey }}</small>
         </div>
-        <div class="status-card">
-          <span>角色</span>
-          <strong>{{ session?.roleKey }}</strong>
-        </div>
-        <div class="status-card">
-          <span>后端服务</span>
-          <strong>{{ healthStatus }}</strong>
-        </div>
-        <div class="status-card">
-          <span>数据库</span>
-          <strong>{{ dbSummary }}</strong>
-        </div>
-      </div>
-    </header>
-
-    <nav class="workspace-nav">
-      <a class="nav-pill" href="#overview">总览</a>
-      <a v-if="isPlatformAdmin" class="nav-pill" href="#accounts">账号</a>
-      <a v-if="isPlatformAdmin" class="nav-pill" href="#policies">模型策略</a>
-      <a class="nav-pill" href="#finance">{{ isPlatformAdmin ? "租户充值" : "钱包额度" }}</a>
-      <a v-if="canViewTenantWorkspace" class="nav-pill" href="#members">项目成员</a>
-      <a v-if="canViewTenantWorkspace" class="nav-pill" href="#assets">客户素材</a>
-    </nav>
-
-    <main class="dashboard-grid">
-      <section id="overview" class="panel panel-wide">
-        <div class="panel-head">
-          <div>
-            <p class="panel-label">{{ isPlatformAdmin ? "平台总览" : "租户总览" }}</p>
-            <h2>{{ isPlatformAdmin ? "租户运营概览" : "租户工作台概览" }}</h2>
+        <nav class="sidebar-nav">
+          <button
+            v-for="menu in workspaceMenus"
+            :key="menu.key"
+            type="button"
+            class="sidebar-link"
+            :class="{ active: activeMenuKey === menu.key }"
+            @click="selectMenu(menu.key)"
+          >
+            <span>{{ menu.label }}</span>
+            <strong>{{ menu.badge }}</strong>
+          </button>
+        </nav>
+        <div class="sidebar-status">
+          <div class="status-card compact">
+            <span>后端服务</span>
+            <strong>{{ healthStatus }}</strong>
           </div>
-          <div class="panel-actions">
-            <button class="action-button" type="button" @click="runAction(loadDashboard)">
-              刷新
-            </button>
-            <button class="action-button secondary-button" type="button" @click="logout">
-              退出登录
-            </button>
+          <div class="status-card compact">
+            <span>数据库</span>
+            <strong>{{ dbSummary }}</strong>
           </div>
+          <button class="action-button secondary-button full-button" type="button" @click="logout">
+            退出登录
+          </button>
         </div>
-        <div class="stats-grid">
-          <article v-if="isPlatformAdmin" class="stat-card">
-            <span>策略数</span>
-            <strong>{{ summary.policies }}</strong>
-          </article>
-          <article v-if="isPlatformAdmin" class="stat-card">
-            <span>账号数</span>
-            <strong>{{ summary.users }}</strong>
-          </article>
-          <article v-if="isPlatformAdmin" class="stat-card">
-            <span>审计事件</span>
-            <strong>{{ summary.auditEvents }}</strong>
-          </article>
-          <article class="stat-card">
-            <span>钱包余额</span>
-            <strong>{{ wallet.balance }}</strong>
-          </article>
-          <article v-if="canViewTenantWorkspace" class="stat-card">
-            <span>成员 Token 剩余</span>
-            <strong>{{ quotas.userTokenRemaining }}</strong>
-          </article>
-          <article v-if="canViewTenantWorkspace" class="stat-card">
-            <span>项目数</span>
-            <strong>{{ projects.length }}</strong>
-          </article>
-          <article v-if="canViewTenantWorkspace" class="stat-card">
-            <span>客户数</span>
-            <strong>{{ clients.length }}</strong>
-          </article>
-          <article v-if="canViewTenantWorkspace" class="stat-card">
-            <span>品牌数</span>
-            <strong>{{ brands.length }}</strong>
-          </article>
-        </div>
-      </section>
+      </aside>
 
-      <section v-if="isPlatformAdmin" id="accounts" class="panel">
+      <section class="workspace-main">
+        <header class="hero top-hero">
+          <div class="hero-copy-block">
+            <p class="eyebrow">{{ activeMenu?.label ?? workspaceTitle }}</p>
+            <h1>{{ activeTab?.label ?? workspaceTitle }}</h1>
+            <p class="hero-copy">当前页面围绕所选导航展示，避免整屏堆叠成长演示页。</p>
+          </div>
+          <div class="hero-status">
+            <div class="status-card">
+              <span>当前账号</span>
+              <strong>{{ session?.displayName }}</strong>
+            </div>
+            <div class="status-card">
+              <span>钱包余额</span>
+              <strong>{{ wallet.balance }}</strong>
+            </div>
+            <div class="status-card">
+              <span>数据库</span>
+              <strong>{{ dbSummary }}</strong>
+            </div>
+            <div class="status-card">
+              <span>当前角色</span>
+              <strong>{{ session?.roleKey }}</strong>
+            </div>
+          </div>
+        </header>
+
+        <nav class="workspace-nav tab-nav">
+          <button
+            v-for="tab in activeTabs"
+            :key="tab.key"
+            type="button"
+            class="nav-pill"
+            :class="{ active: activeTabKey === tab.key }"
+            @click="selectTab(tab.key)"
+          >
+            {{ tab.label }}
+          </button>
+          <button class="action-button refresh-button" type="button" @click="runAction(loadDashboard)">
+            刷新数据
+          </button>
+        </nav>
+
+        <main class="dashboard-grid">
+          <section v-show="activeTabKey === 'overview'" id="overview" class="panel panel-wide">
+            <div class="panel-head">
+              <div>
+                <p class="panel-label">{{ isPlatformAdmin ? "平台总览" : "租户总览" }}</p>
+                <h2>{{ isPlatformAdmin ? "租户运营概览" : "租户工作台概览" }}</h2>
+              </div>
+            </div>
+            <div class="stats-grid">
+              <article v-if="isPlatformAdmin" class="stat-card">
+                <span>策略数</span>
+                <strong>{{ summary.policies }}</strong>
+              </article>
+              <article v-if="isPlatformAdmin" class="stat-card">
+                <span>账号数</span>
+                <strong>{{ summary.users }}</strong>
+              </article>
+              <article v-if="isPlatformAdmin" class="stat-card">
+                <span>审计事件</span>
+                <strong>{{ summary.auditEvents }}</strong>
+              </article>
+              <article class="stat-card">
+                <span>钱包余额</span>
+                <strong>{{ wallet.balance }}</strong>
+              </article>
+              <article v-if="canViewTenantWorkspace" class="stat-card">
+                <span>成员 Token 剩余</span>
+                <strong>{{ quotas.userTokenRemaining }}</strong>
+              </article>
+              <article v-if="canViewTenantWorkspace" class="stat-card">
+                <span>项目数</span>
+                <strong>{{ projects.length }}</strong>
+              </article>
+              <article v-if="canViewTenantWorkspace" class="stat-card">
+                <span>客户数</span>
+                <strong>{{ clients.length }}</strong>
+              </article>
+              <article v-if="canViewTenantWorkspace" class="stat-card">
+                <span>品牌数</span>
+                <strong>{{ brands.length }}</strong>
+              </article>
+            </div>
+          </section>
+
+          <section v-if="isPlatformAdmin" v-show="activeTabKey === 'tenants'" class="panel panel-wide">
+            <div class="panel-head">
+              <div>
+                <p class="panel-label">平台租户</p>
+                <h2>租户总览</h2>
+              </div>
+            </div>
+            <div class="tenant-grid">
+              <article v-for="tenant in tenants" :key="tenant.tenantId" class="stat-card tenant-card">
+                <span>{{ tenant.displayName }}</span>
+                <strong>{{ tenant.walletBalance }}</strong>
+                <div class="subtext">成员 {{ tenant.memberCount }} · 负责人 {{ tenant.ownerCount }} · 启用 {{ tenant.activeMemberCount }}</div>
+              </article>
+            </div>
+          </section>
+
+          <section v-if="isPlatformAdmin" v-show="activeTabKey === 'accounts'" id="accounts" class="panel">
         <div class="panel-head">
           <div>
             <p class="panel-label">账号管理</p>
@@ -749,7 +922,7 @@ onBeforeUnmount(() => {
         </div>
       </section>
 
-      <section v-if="isPlatformAdmin" id="policies" class="panel">
+      <section v-if="isPlatformAdmin" v-show="activeTabKey === 'policies'" id="policies" class="panel">
         <div class="panel-head">
           <div>
             <p class="panel-label">超管</p>
@@ -799,7 +972,7 @@ onBeforeUnmount(() => {
         </div>
       </section>
 
-      <section id="finance" class="panel">
+      <section v-show="activeTabKey === 'finance'" id="finance" class="panel">
         <div class="panel-head">
           <div>
             <p class="panel-label">{{ isPlatformAdmin ? "平台侧租户运营" : "租户资金" }}</p>
@@ -874,7 +1047,7 @@ onBeforeUnmount(() => {
         </div>
       </section>
 
-      <section v-if="canViewTenantWorkspace" id="members" class="panel">
+      <section v-if="canViewTenantWorkspace" v-show="activeTabKey === 'members'" id="members" class="panel">
         <div class="panel-head">
           <div>
             <p class="panel-label">租户协作</p>
@@ -959,7 +1132,7 @@ onBeforeUnmount(() => {
         </div>
       </section>
 
-      <section v-if="canViewTenantWorkspace" id="assets" class="panel">
+      <section v-if="canViewTenantWorkspace" v-show="activeTabKey === 'assets'" id="assets" class="panel">
         <div class="panel-head">
           <div>
             <p class="panel-label">租户品牌资产</p>
@@ -1015,14 +1188,15 @@ onBeforeUnmount(() => {
           </div>
         </div>
       </section>
-    </main>
+        </main>
 
-    <footer class="footer-bar">
-      <span v-if="loading">页面加载中...</span>
-      <span v-else-if="error" class="error-text">{{ error }}</span>
-      <span v-else-if="success" class="success-text">{{ success }}</span>
-      <span v-else>系统已就绪</span>
-    </footer>
-    </template>
+        <footer class="footer-bar">
+          <span v-if="loading">页面加载中...</span>
+          <span v-else-if="error" class="error-text">{{ error }}</span>
+          <span v-else-if="success" class="success-text">{{ success }}</span>
+          <span v-else>系统已就绪</span>
+        </footer>
+      </section>
+    </div>
   </div>
 </template>

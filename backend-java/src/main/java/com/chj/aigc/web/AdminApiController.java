@@ -8,9 +8,11 @@ import com.chj.aigc.access.ModelAccessRule;
 import com.chj.aigc.access.ModelAccessScope;
 import com.chj.aigc.auth.AuthService;
 import com.chj.aigc.auth.AuthUser;
+import com.chj.aigc.billing.TenantBillingService;
 import com.chj.aigc.web.dto.CreateModelAccessRuleRequest;
 import com.chj.aigc.web.dto.CreateUserRequest;
 import java.time.Instant;
+import java.util.ArrayList;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
@@ -29,10 +31,12 @@ import org.springframework.web.bind.annotation.RestController;
 public class AdminApiController {
     private final ModelAccessAdminStore store;
     private final AuthService authService;
+    private final TenantBillingService tenantBillingService;
 
-    public AdminApiController(ModelAccessAdminStore store, AuthService authService) {
+    public AdminApiController(ModelAccessAdminStore store, AuthService authService, TenantBillingService tenantBillingService) {
         this.store = store;
         this.authService = authService;
+        this.tenantBillingService = tenantBillingService;
         if (store.listRules().isEmpty()) {
             ModelAccessRule seedRule = new ModelAccessRule(
                     "rule-seed-1",
@@ -77,6 +81,23 @@ public class AdminApiController {
         return ApiResponse.success(authService.listUsers().stream()
                 .map(this::serializeUser)
                 .toList());
+    }
+
+    /**
+     * 返回平台侧租户总览。
+     * 当前根据账号中的 tenantId 聚合租户，并补充钱包余额和成员数量，供超管工作台展示。
+     */
+    @GetMapping("/tenants")
+    public ApiResponse<List<Map<String, Object>>> tenants() {
+        Map<String, List<AuthUser>> tenantUsers = new LinkedHashMap<>();
+        authService.listUsers().stream()
+                .filter(user -> user.tenantId() != null && !user.tenantId().isBlank())
+                .forEach(user -> tenantUsers.computeIfAbsent(user.tenantId(), ignored -> new ArrayList<>()).add(user));
+
+        List<Map<String, Object>> payload = tenantUsers.entrySet().stream()
+                .map(entry -> serializeTenant(entry.getKey(), entry.getValue()))
+                .toList();
+        return ApiResponse.success(payload);
     }
 
     @PostMapping("/users")
@@ -134,6 +155,26 @@ public class AdminApiController {
         payload.put("roleKey", user.roleKey());
         payload.put("tenantId", user.tenantId());
         payload.put("active", user.active());
+        return payload;
+    }
+
+    private Map<String, Object> serializeTenant(String tenantId, List<AuthUser> tenantUsers) {
+        Map<String, Object> wallet = tenantBillingService.walletSnapshot(tenantId);
+        long ownerCount = tenantUsers.stream()
+                .filter(user -> "tenant_owner".equals(user.roleKey()))
+                .count();
+        long activeUsers = tenantUsers.stream()
+                .filter(AuthUser::active)
+                .count();
+
+        Map<String, Object> payload = new LinkedHashMap<>();
+        payload.put("tenantId", tenantId);
+        payload.put("displayName", tenantId);
+        payload.put("memberCount", tenantUsers.size());
+        payload.put("ownerCount", ownerCount);
+        payload.put("activeMemberCount", activeUsers);
+        payload.put("walletBalance", wallet.get("balance"));
+        payload.put("ledgerCount", wallet.get("ledgerCount"));
         return payload;
     }
 }
