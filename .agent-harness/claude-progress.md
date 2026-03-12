@@ -57,3 +57,8 @@ Validation: Ran python -m unittest discover -s tests -v and mvn test; settlement
 Implemented Java-side admin observability with admin audit events, safety policies, and safety incidents, plus Python-side generation audit records and forbidden-term safety evaluation for model outputs.
 
 Validation: Ran mvn test and python -m unittest discover -s tests -v; observability tests verified admin event recording, safety incident capture, generation summaries, charge visibility, and safety policy violation detection.
+
+## 2026-03-12T05:12:41+00:00 - feature-012 - Define V1 delivery slices and implementation roadmap
+Expanded the V1 roadmap into a concrete delivery plan with milestone slices, demo scenarios, release recommendations, and an explicit next-phase shift from domain modeling to Spring Boot APIs and a first visible admin UI.
+
+Validation: Validated the harness state with python harness.py doctor and reviewed that the roadmap now maps completed core features to a user-visible delivery sequence.

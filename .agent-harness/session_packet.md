@@ -1,7 +1,7 @@
 # Session Packet
 
 Project: AIGC Advertising SaaS Platform
-Recommended feature: feature-012
+Recommended feature: No unblocked feature selected yet
 
 Execution order:
 1. Read .agent-harness/session_brief.md
