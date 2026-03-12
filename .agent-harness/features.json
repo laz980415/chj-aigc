@@ -1,0 +1,233 @@
+{
+  "project_name": "AIGC Advertising SaaS Platform",
+  "created_at": "2026-03-12T04:27:49+00:00",
+  "features": [
+    {
+      "id": "feature-001",
+      "title": "Define system architecture and bounded contexts",
+      "description": "Finalize the initial service boundaries, domain model, and V1 architecture for auth, billing, model gateway, asset library, and generation flows.",
+      "acceptance_criteria": [
+        "Architecture doc identifies major services and responsibilities",
+        "Core entities and relationships are documented",
+        "Primary V1 assumptions and out-of-scope items are listed"
+      ],
+      "depends_on": [],
+      "state": "done",
+      "created_at": "2026-03-12T04:30:00+00:00",
+      "updated_at": "2026-03-12T04:36:28+00:00",
+      "session_notes": [
+        {
+          "at": "2026-03-12T04:36:28+00:00",
+          "note": "Created the initial architecture definition, bounded contexts, service layout, request flow, and phased V1 roadmap in docs/architecture.md and docs/v1-roadmap.md."
+        }
+      ]
+    },
+    {
+      "id": "feature-002",
+      "title": "Implement identity, tenant, project, and RBAC model",
+      "description": "Design and implement the core authorization model for super admins, tenant owners, project admins, and users.",
+      "acceptance_criteria": [
+        "Users can belong to tenants and projects",
+        "Roles support platform-level and tenant/project-level permissions",
+        "Permission matrix is documented and testable"
+      ],
+      "depends_on": [
+        "feature-001"
+      ],
+      "state": "pending",
+      "created_at": "2026-03-12T04:30:00+00:00",
+      "updated_at": "2026-03-12T04:30:00+00:00",
+      "session_notes": []
+    },
+    {
+      "id": "feature-003",
+      "title": "Design unified model provider registry and capability schema",
+      "description": "Create the abstraction for providers, models, capabilities, status, and vendor replacement within the platform.",
+      "acceptance_criteria": [
+        "Model registry supports multiple providers and multiple modalities",
+        "Capability types cover text, image, and video generation",
+        "Registry can map platform model aliases to vendor-specific identifiers"
+      ],
+      "depends_on": [
+        "feature-001"
+      ],
+      "state": "pending",
+      "created_at": "2026-03-12T04:30:00+00:00",
+      "updated_at": "2026-03-12T04:30:00+00:00",
+      "session_notes": []
+    },
+    {
+      "id": "feature-004",
+      "title": "Implement platform pricing, metering units, and ledger model",
+      "description": "Define internal price units and billing records so vendor changes do not break tenant billing.",
+      "acceptance_criteria": [
+        "Pricing model supports token, image, and video-second dimensions",
+        "Ledger records both internal price and underlying vendor reference",
+        "Historical charges remain stable after future price changes"
+      ],
+      "depends_on": [
+        "feature-001",
+        "feature-003"
+      ],
+      "state": "pending",
+      "created_at": "2026-03-12T04:30:00+00:00",
+      "updated_at": "2026-03-12T04:30:00+00:00",
+      "session_notes": []
+    },
+    {
+      "id": "feature-005",
+      "title": "Implement tenant wallet recharge and quota allocation",
+      "description": "Allow tenant owners to maintain balance and allocate usage limits to projects and users.",
+      "acceptance_criteria": [
+        "Tenant wallet supports recharge records and balance queries",
+        "Quota rules can be set per user and per project",
+        "Quota dimensions include tokens, images, video seconds, and daily limits"
+      ],
+      "depends_on": [
+        "feature-002",
+        "feature-004"
+      ],
+      "state": "pending",
+      "created_at": "2026-03-12T04:30:00+00:00",
+      "updated_at": "2026-03-12T04:30:00+00:00",
+      "session_notes": []
+    },
+    {
+      "id": "feature-006",
+      "title": "Implement super-admin model access control",
+      "description": "Allow super admins to control which tenants, roles, or projects can use which platform models.",
+      "acceptance_criteria": [
+        "Super admin can enable or disable models by scope",
+        "Model access policy is enforced before every generation request",
+        "Policy decisions are auditable"
+      ],
+      "depends_on": [
+        "feature-002",
+        "feature-003"
+      ],
+      "state": "pending",
+      "created_at": "2026-03-12T04:30:00+00:00",
+      "updated_at": "2026-03-12T04:30:00+00:00",
+      "session_notes": []
+    },
+    {
+      "id": "feature-007",
+      "title": "Implement brand, client, and asset library domain",
+      "description": "Support advertiser clients, their brands, and brand-scoped assets and rules inside each tenant.",
+      "acceptance_criteria": [
+        "Tenant can manage clients and brands",
+        "Assets can be tagged to tenant, project, client, and brand",
+        "Brand rules support style guidance and forbidden statements"
+      ],
+      "depends_on": [
+        "feature-002"
+      ],
+      "state": "pending",
+      "created_at": "2026-03-12T04:30:00+00:00",
+      "updated_at": "2026-03-12T04:30:00+00:00",
+      "session_notes": []
+    },
+    {
+      "id": "feature-008",
+      "title": "Implement grounded prompt assembly for brand-safe generation",
+      "description": "Assemble prompts from user input, project context, brand rules, and selected assets so output follows brand constraints.",
+      "acceptance_criteria": [
+        "Generation requests can reference brand and selected assets",
+        "Prompt assembly injects brand guidance and forbidden terms",
+        "Prompt context generation is traceable for audit"
+      ],
+      "depends_on": [
+        "feature-003",
+        "feature-007"
+      ],
+      "state": "pending",
+      "created_at": "2026-03-12T04:30:00+00:00",
+      "updated_at": "2026-03-12T04:30:00+00:00",
+      "session_notes": []
+    },
+    {
+      "id": "feature-009",
+      "title": "Implement generation job orchestration for copy, image, and video",
+      "description": "Build the main task flow for multiple AIGC modalities with sync and async execution support.",
+      "acceptance_criteria": [
+        "Copy generation works through the model gateway",
+        "Image generation works through the model gateway",
+        "Video generation supports asynchronous task tracking"
+      ],
+      "depends_on": [
+        "feature-003",
+        "feature-006",
+        "feature-008"
+      ],
+      "state": "pending",
+      "created_at": "2026-03-12T04:30:00+00:00",
+      "updated_at": "2026-03-12T04:30:00+00:00",
+      "session_notes": []
+    },
+    {
+      "id": "feature-010",
+      "title": "Implement usage deduction, settlement, and quota enforcement",
+      "description": "Tie model usage to internal prices, wallet deduction, and quota checks across users and projects.",
+      "acceptance_criteria": [
+        "Every generation task produces meterable usage records",
+        "Charges deduct from tenant wallet using internal pricing",
+        "Quota violations block requests with clear errors"
+      ],
+      "depends_on": [
+        "feature-004",
+        "feature-005",
+        "feature-009"
+      ],
+      "state": "pending",
+      "created_at": "2026-03-12T04:30:00+00:00",
+      "updated_at": "2026-03-12T04:30:00+00:00",
+      "session_notes": []
+    },
+    {
+      "id": "feature-011",
+      "title": "Implement audit logs, safety policies, and admin observability",
+      "description": "Provide auditability for admin actions and generation tasks, plus safety and compliance hooks.",
+      "acceptance_criteria": [
+        "Critical admin actions are logged",
+        "Generation tasks keep request, result summary, and cost records",
+        "Safety policy violations are captured and queryable"
+      ],
+      "depends_on": [
+        "feature-006",
+        "feature-009",
+        "feature-010"
+      ],
+      "state": "pending",
+      "created_at": "2026-03-12T04:30:00+00:00",
+      "updated_at": "2026-03-12T04:30:00+00:00",
+      "session_notes": []
+    },
+    {
+      "id": "feature-012",
+      "title": "Define V1 delivery slices and implementation roadmap",
+      "description": "Translate the feature backlog into phased milestones so the build can proceed incrementally.",
+      "acceptance_criteria": [
+        "Backlog is grouped into release slices",
+        "Each slice has clear dependencies",
+        "The first implementation slice is actionable by a coding agent"
+      ],
+      "depends_on": [
+        "feature-001",
+        "feature-002",
+        "feature-003",
+        "feature-004",
+        "feature-005",
+        "feature-006",
+        "feature-007",
+        "feature-008",
+        "feature-009",
+        "feature-010",
+        "feature-011"
+      ],
+      "state": "pending",
+      "created_at": "2026-03-12T04:30:00+00:00",
+      "updated_at": "2026-03-12T04:30:00+00:00",
+      "session_notes": []
+    }
+  ]
+}

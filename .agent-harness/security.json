@@ -1,0 +1,22 @@
+{
+  "allowed_paths": [
+    "."
+  ],
+  "blocked_paths": [
+    ".env",
+    "secrets",
+    "credentials"
+  ],
+  "allowed_commands": [
+    "python",
+    "pytest",
+    "npm",
+    "node",
+    "git status",
+    "git diff"
+  ],
+  "notes": [
+    "Review destructive commands manually.",
+    "Add project-specific restrictions before autonomous execution."
+  ]
+}
