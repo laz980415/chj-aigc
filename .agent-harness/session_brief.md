@@ -4,22 +4,22 @@ Project: AIGC Advertising SaaS Platform
 
 ## Status Snapshot
 
-- Pending: 4
+- Pending: 3
 - In progress: 1
 - Blocked: 0
-- Done: 7
+- Done: 8
 
 ## Recommended Next Feature
 
-- ID: feature-008
-- Title: Implement grounded prompt assembly for brand-safe generation
+- ID: feature-009
+- Title: Implement generation job orchestration for copy, image, and video
 - State: in_progress
-- Description: Implement Python-side prompt assembly from user input, project context, brand rules, and selected assets so output follows brand constraints.
-- Depends on: feature-003, feature-007
+- Description: Build the Python-side task flow for multiple AIGC modalities with sync and async execution support, integrated with Java business services.
+- Depends on: feature-003, feature-006, feature-008
 - Acceptance criteria:
-  - Generation requests can reference brand and selected assets
-  - Prompt assembly injects brand guidance and forbidden terms
-  - Prompt context generation is traceable for audit
+  - Copy generation works through the model gateway
+  - Image generation works through the model gateway
+  - Video generation supports asynchronous task tracking
 
 ## Session Rules
 

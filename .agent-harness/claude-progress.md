@@ -37,3 +37,8 @@ Validation: Ran mvn test in backend-java and python -m unittest discover -s test
 
 ## 2026-03-12T05:01:27+00:00 - feature-007 - Implement brand, client, and asset library domain
 Implemented the Java asset-library domain with clients, brands, brand rules, assets, brand profile aggregation, and asset filtering by tenant, project, client, brand, kind, and tags.
+
+## 2026-03-12T05:03:11+00:00 - feature-008 - Implement grounded prompt assembly for brand-safe generation
+Implemented Python-side grounded prompt assembly with brand context, structured brand rules, referenced assets, generation intent, and audit metadata for traceable prompt construction.
+
+Validation: Ran python -m unittest discover -s tests -v and mvn test; grounding tests verified brand-rule injection, asset references, and asset count limiting for traceability.
