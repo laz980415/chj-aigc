@@ -4,6 +4,7 @@ import { computed, onMounted, reactive, ref } from "vue";
 type SummaryPayload = {
   policies: number;
   auditEvents: number;
+  users: number;
 };
 
 type RulePayload = {
@@ -57,6 +58,15 @@ type SessionPayload = {
   expiresAt: string;
 };
 
+type UserPayload = {
+  id: string;
+  username: string;
+  displayName: string;
+  roleKey: string;
+  tenantId: string | null;
+  active: boolean;
+};
+
 const loading = ref(true);
 const error = ref("");
 const success = ref("");
@@ -64,13 +74,15 @@ const isAuthenticated = ref(false);
 
 const healthStatus = ref("加载中");
 const dbInfo = ref<DbInfoPayload | null>(null);
-const summary = ref<SummaryPayload>({ policies: 0, auditEvents: 0 });
+const summary = ref<SummaryPayload>({ policies: 0, auditEvents: 0, users: 0 });
 const rules = ref<RulePayload[]>([]);
 const wallet = ref<WalletPayload>({ tenantId: "tenant-demo", balance: "0", ledgerCount: 0 });
 const quotas = ref<QuotaPayload>({ projectImageRemaining: "0", userTokenRemaining: "0" });
 const clients = ref<ClientPayload[]>([]);
 const assets = ref<AssetPayload[]>([]);
 const session = ref<SessionPayload | null>(null);
+const users = ref<UserPayload[]>([]);
+const roles = ref<string[]>([]);
 
 const loginForm = reactive({
   username: "admin",
@@ -85,6 +97,15 @@ const ruleForm = reactive({
   scopeValue: "tenant-demo",
   effect: "allow",
   reason: "Created from Vue admin console",
+});
+
+const userForm = reactive({
+  userId: "user-ui-1",
+  username: "new_user",
+  password: "User@123",
+  displayName: "新账号",
+  roleKey: "tenant_member",
+  tenantId: "tenant-demo",
 });
 
 const rechargeForm = reactive({
@@ -133,6 +154,8 @@ async function loadDashboard() {
     health,
     dbPayload,
     summaryPayload,
+    rolePayload,
+    userPayload,
     rulePayload,
     walletPayload,
     quotaPayload,
@@ -142,6 +165,8 @@ async function loadDashboard() {
     fetchJson<{ status: string }>("/api/health"),
     fetchJson<DbInfoPayload>("/api/db-info"),
     fetchJson<SummaryPayload>("/api/admin/summary"),
+    fetchJson<string[]>("/api/admin/roles"),
+    fetchJson<UserPayload[]>("/api/admin/users"),
     fetchJson<RulePayload[]>("/api/admin/model-access-rules"),
     fetchJson<WalletPayload>("/api/tenant/wallet"),
     fetchJson<QuotaPayload>("/api/tenant/quotas"),
@@ -152,12 +177,28 @@ async function loadDashboard() {
   healthStatus.value = health.status;
   dbInfo.value = dbPayload;
   summary.value = summaryPayload;
+  roles.value = rolePayload;
+  users.value = userPayload;
   rules.value = rulePayload;
   wallet.value = walletPayload;
   quotas.value = quotaPayload;
   clients.value = clientPayload;
   assets.value = assetPayload;
   loading.value = false;
+}
+
+async function createUser() {
+  success.value = "";
+  error.value = "";
+  await fetchJson<UserPayload>("/api/admin/users", {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json",
+    },
+    body: JSON.stringify(userForm),
+  });
+  success.value = `账号 ${userForm.username} 已创建`;
+  await loadDashboard();
 }
 
 async function login() {
@@ -340,6 +381,10 @@ onMounted(() => {
             <strong>{{ summary.policies }}</strong>
           </article>
           <article class="stat-card">
+            <span>账号数</span>
+            <strong>{{ summary.users }}</strong>
+          </article>
+          <article class="stat-card">
             <span>审计事件</span>
             <strong>{{ summary.auditEvents }}</strong>
           </article>
@@ -351,6 +396,50 @@ onMounted(() => {
             <span>用户 Token 剩余</span>
             <strong>{{ quotas.userTokenRemaining }}</strong>
           </article>
+        </div>
+      </section>
+
+      <section class="panel">
+        <div class="panel-head">
+          <div>
+            <p class="panel-label">账号管理</p>
+            <h2>用户与角色</h2>
+          </div>
+        </div>
+        <form class="form-stack" @submit.prevent="runAction(createUser)">
+          <div class="form-grid">
+            <input v-model="userForm.userId" placeholder="用户 ID" required>
+            <input v-model="userForm.username" placeholder="登录名" required>
+            <input v-model="userForm.displayName" placeholder="显示名" required>
+            <input v-model="userForm.password" placeholder="初始密码" required>
+            <select v-model="userForm.roleKey">
+              <option v-for="role in roles" :key="role" :value="role">{{ role }}</option>
+            </select>
+            <input v-model="userForm.tenantId" placeholder="租户 ID，可为空">
+          </div>
+          <button class="action-button" type="submit">创建账号</button>
+        </form>
+        <div class="table-wrap">
+          <table>
+            <thead>
+              <tr>
+                <th>账号</th>
+                <th>显示名</th>
+                <th>角色</th>
+                <th>租户</th>
+                <th>状态</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr v-for="user in users" :key="user.id">
+                <td>{{ user.username }}</td>
+                <td>{{ user.displayName }}</td>
+                <td>{{ user.roleKey }}</td>
+                <td>{{ user.tenantId ?? "-" }}</td>
+                <td>{{ user.active ? "启用" : "停用" }}</td>
+              </tr>
+            </tbody>
+          </table>
         </div>
       </section>
 

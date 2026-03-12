@@ -194,4 +194,38 @@ class ApplicationSmokeTest {
         assertEquals("admin", me.get("username"));
         assertEquals("platform_super_admin", me.get("roleKey"));
     }
+
+    @Test
+    void adminCanCreateAndListUsers() throws Exception {
+        String token = loginAsAdmin();
+
+        String createUserBody = """
+                {
+                  "userId": "user-created-1",
+                  "username": "member_demo",
+                  "password": "Member@123",
+                  "displayName": "演示成员",
+                  "roleKey": "tenant_member",
+                  "tenantId": "tenant-demo"
+                }
+                """;
+
+        mockMvc.perform(post("/api/admin/users")
+                        .header("X-Auth-Token", token)
+                        .contentType("application/json")
+                        .content(createUserBody))
+                .andExpect(status().isOk());
+
+        MvcResult result = mockMvc.perform(get("/api/admin/users")
+                        .header("X-Auth-Token", token))
+                .andExpect(status().isOk())
+                .andReturn();
+
+        List<Map<String, Object>> users = objectMapper.readValue(
+                result.getResponse().getContentAsByteArray(),
+                new TypeReference<>() {
+                }
+        );
+        assertFalse(users.isEmpty());
+    }
 }

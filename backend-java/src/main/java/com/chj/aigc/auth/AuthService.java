@@ -2,6 +2,7 @@ package com.chj.aigc.auth;
 
 import java.time.Instant;
 import java.time.temporal.ChronoUnit;
+import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
 
@@ -37,6 +38,41 @@ public final class AuthService {
     public Optional<AuthSession> findSession(String token) {
         return authStore.findSessionByToken(token)
                 .filter(session -> session.expiresAt().isAfter(Instant.now()));
+    }
+
+    public List<AuthUser> listUsers() {
+        return authStore.listUsers();
+    }
+
+    public AuthUser createUser(
+            String userId,
+            String username,
+            String password,
+            String displayName,
+            String roleKey,
+            String tenantId
+    ) {
+        AuthUser user = new AuthUser(
+                userId,
+                username,
+                password,
+                displayName,
+                roleKey,
+                tenantId,
+                true
+        );
+        authStore.saveUser(user);
+        return user;
+    }
+
+    public List<String> builtinRoles() {
+        return List.of(
+                "platform_super_admin",
+                "tenant_owner",
+                "tenant_member",
+                "project_admin",
+                "project_user"
+        );
     }
 
     private void seedUsersIfEmpty() {
