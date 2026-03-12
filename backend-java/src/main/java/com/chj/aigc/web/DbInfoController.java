@@ -20,11 +20,11 @@ public class DbInfoController {
     private String datasourcePassword;
 
     @GetMapping("/db-info")
-    public Map<String, Object> dbInfo() {
-        return Map.of(
+    public ApiResponse<Map<String, Object>> dbInfo() {
+        return ApiResponse.success(Map.of(
                 "url", datasourceUrl,
                 "username", datasourceUsername,
                 "passwordConfigured", !datasourcePassword.isBlank()
-        );
+        ));
     }
 }

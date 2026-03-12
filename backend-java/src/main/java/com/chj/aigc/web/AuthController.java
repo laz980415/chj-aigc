@@ -23,20 +23,21 @@ public class AuthController {
     }
 
     @PostMapping("/login")
-    public Map<String, Object> login(@RequestBody LoginRequest request) {
+    public ApiResponse<Map<String, Object>> login(@RequestBody LoginRequest request) {
         AuthSession session = authService.login(request.username(), request.password());
         Map<String, Object> payload = new LinkedHashMap<>();
         payload.put("token", session.token());
+        payload.put("userId", session.userId());
         payload.put("username", session.username());
         payload.put("displayName", session.displayName());
         payload.put("roleKey", session.roleKey());
         payload.put("tenantId", session.tenantId());
         payload.put("expiresAt", session.expiresAt().toString());
-        return payload;
+        return ApiResponse.success(payload);
     }
 
     @GetMapping("/me")
-    public Map<String, Object> me(HttpServletRequest request) {
+    public ApiResponse<Map<String, Object>> me(HttpServletRequest request) {
         AuthSession session = (AuthSession) request.getAttribute(AuthInterceptor.REQUEST_SESSION_KEY);
         Map<String, Object> payload = new LinkedHashMap<>();
         payload.put("userId", session.userId());
@@ -45,6 +46,6 @@ public class AuthController {
         payload.put("roleKey", session.roleKey());
         payload.put("tenantId", session.tenantId());
         payload.put("expiresAt", session.expiresAt().toString());
-        return payload;
+        return ApiResponse.success(payload);
     }
 }

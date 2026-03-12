@@ -15,6 +15,13 @@ public final class InMemoryAuthStore implements AuthStore {
     }
 
     @Override
+    public Optional<AuthUser> findUserById(String userId) {
+        return users.stream()
+                .filter(user -> user.id().equals(userId))
+                .findFirst();
+    }
+
+    @Override
     public Optional<AuthUser> findUserByUsername(String username) {
         return users.stream()
                 .filter(user -> user.username().equalsIgnoreCase(username))

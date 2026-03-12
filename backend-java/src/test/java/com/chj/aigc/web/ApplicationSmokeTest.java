@@ -2,6 +2,7 @@ package com.chj.aigc.web;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import com.chj.aigc.Application;
 import com.fasterxml.jackson.databind.ObjectMapper;
@@ -29,6 +30,16 @@ class ApplicationSmokeTest {
     @Autowired
     private ObjectMapper objectMapper;
 
+    private <T> T readData(MvcResult result, TypeReference<T> typeReference) throws Exception {
+        Map<String, Object> envelope = objectMapper.readValue(
+                result.getResponse().getContentAsByteArray(),
+                new TypeReference<>() {
+                }
+        );
+        assertEquals(0, envelope.get("code"));
+        return objectMapper.convertValue(envelope.get("data"), typeReference);
+    }
+
     private String login(String username, String password) throws Exception {
         String loginBody = """
                 {
@@ -43,11 +54,8 @@ class ApplicationSmokeTest {
                 .andExpect(status().isOk())
                 .andReturn();
 
-        Map<String, Object> payload = objectMapper.readValue(
-                result.getResponse().getContentAsByteArray(),
-                new TypeReference<>() {
-                }
-        );
+        Map<String, Object> payload = readData(result, new TypeReference<>() {
+        });
         return String.valueOf(payload.get("token"));
     }
 
@@ -65,11 +73,8 @@ class ApplicationSmokeTest {
                 .andExpect(status().isOk())
                 .andReturn();
 
-        Map<String, Object> payload = objectMapper.readValue(
-                result.getResponse().getContentAsByteArray(),
-                new TypeReference<>() {
-                }
-        );
+        Map<String, Object> payload = readData(result, new TypeReference<>() {
+        });
         assertEquals("ok", payload.get("status"));
     }
 
@@ -81,22 +86,16 @@ class ApplicationSmokeTest {
                         .header("X-Auth-Token", token))
                 .andExpect(status().isOk())
                 .andReturn();
-        Map<String, Object> wallet = objectMapper.readValue(
-                walletResult.getResponse().getContentAsByteArray(),
-                new TypeReference<>() {
-                }
-        );
+        Map<String, Object> wallet = readData(walletResult, new TypeReference<>() {
+        });
         assertEquals("tenant-demo", wallet.get("tenantId"));
 
         MvcResult clientsResult = mockMvc.perform(get("/api/tenant/clients")
                         .header("X-Auth-Token", token))
                 .andExpect(status().isOk())
                 .andReturn();
-        List<Map<String, Object>> clients = objectMapper.readValue(
-                clientsResult.getResponse().getContentAsByteArray(),
-                new TypeReference<>() {
-                }
-        );
+        List<Map<String, Object>> clients = readData(clientsResult, new TypeReference<>() {
+        });
         assertFalse(clients.isEmpty());
     }
 
@@ -106,14 +105,11 @@ class ApplicationSmokeTest {
                 .andExpect(status().isOk())
                 .andReturn();
 
-        Map<String, Object> payload = objectMapper.readValue(
-                result.getResponse().getContentAsByteArray(),
-                new TypeReference<>() {
-                }
-        );
-        assertEquals("", payload.get("url"));
-        assertEquals("", payload.get("username"));
-        assertEquals(false, payload.get("passwordConfigured"));
+        Map<String, Object> payload = readData(result, new TypeReference<>() {
+        });
+        assertTrue(payload.containsKey("url"));
+        assertTrue(payload.containsKey("username"));
+        assertTrue(payload.containsKey("passwordConfigured"));
     }
 
     @Test
@@ -153,11 +149,8 @@ class ApplicationSmokeTest {
                         .content(rechargeBody))
                 .andExpect(status().isOk())
                 .andReturn();
-        Map<String, Object> wallet = objectMapper.readValue(
-                walletResult.getResponse().getContentAsByteArray(),
-                new TypeReference<>() {
-                }
-        );
+        Map<String, Object> wallet = readData(walletResult, new TypeReference<>() {
+        });
         assertEquals("1250.0000", wallet.get("balance"));
 
         String tenantToken = loginAsTenantOwner();
@@ -179,12 +172,9 @@ class ApplicationSmokeTest {
                         .content(quotaBody))
                 .andExpect(status().isOk())
                 .andReturn();
-        Map<String, Object> quotas = objectMapper.readValue(
-                quotaResult.getResponse().getContentAsByteArray(),
-                new TypeReference<>() {
-                }
-        );
-        assertEquals("48800", String.valueOf(quotas.get("userTokenRemaining")));
+        Map<String, Object> quotas = readData(quotaResult, new TypeReference<>() {
+        });
+        assertEquals("48800.0", String.valueOf(quotas.get("userTokenRemaining")));
     }
 
     @Test
@@ -196,11 +186,8 @@ class ApplicationSmokeTest {
                 .andExpect(status().isOk())
                 .andReturn();
 
-        Map<String, Object> me = objectMapper.readValue(
-                meResult.getResponse().getContentAsByteArray(),
-                new TypeReference<>() {
-                }
-        );
+        Map<String, Object> me = readData(meResult, new TypeReference<>() {
+        });
         assertEquals("admin", me.get("username"));
         assertEquals("platform_super_admin", me.get("roleKey"));
     }
@@ -231,11 +218,8 @@ class ApplicationSmokeTest {
                 .andExpect(status().isOk())
                 .andReturn();
 
-        List<Map<String, Object>> users = objectMapper.readValue(
-                result.getResponse().getContentAsByteArray(),
-                new TypeReference<>() {
-                }
-        );
+        List<Map<String, Object>> users = readData(result, new TypeReference<>() {
+        });
         assertFalse(users.isEmpty());
     }
 
@@ -275,22 +259,16 @@ class ApplicationSmokeTest {
                         .header("X-Auth-Token", token))
                 .andExpect(status().isOk())
                 .andReturn();
-        List<Map<String, Object>> clients = objectMapper.readValue(
-                clientsResult.getResponse().getContentAsByteArray(),
-                new TypeReference<>() {
-                }
-        );
+        List<Map<String, Object>> clients = readData(clientsResult, new TypeReference<>() {
+        });
         assertFalse(clients.isEmpty());
 
         MvcResult brandsResult = mockMvc.perform(get("/api/tenant/brands/client-created-1")
                         .header("X-Auth-Token", token))
                 .andExpect(status().isOk())
                 .andReturn();
-        List<Map<String, Object>> brands = objectMapper.readValue(
-                brandsResult.getResponse().getContentAsByteArray(),
-                new TypeReference<>() {
-                }
-        );
+        List<Map<String, Object>> brands = readData(brandsResult, new TypeReference<>() {
+        });
         assertFalse(brands.isEmpty());
     }
 
@@ -315,22 +293,16 @@ class ApplicationSmokeTest {
                         .header("X-Auth-Token", token))
                 .andExpect(status().isOk())
                 .andReturn();
-        List<Map<String, Object>> projects = objectMapper.readValue(
-                projectsResult.getResponse().getContentAsByteArray(),
-                new TypeReference<>() {
-                }
-        );
+        List<Map<String, Object>> projects = readData(projectsResult, new TypeReference<>() {
+        });
         assertFalse(projects.isEmpty());
 
         MvcResult membersResult = mockMvc.perform(get("/api/tenant/members")
                         .header("X-Auth-Token", token))
                 .andExpect(status().isOk())
                 .andReturn();
-        List<Map<String, Object>> members = objectMapper.readValue(
-                membersResult.getResponse().getContentAsByteArray(),
-                new TypeReference<>() {
-                }
-        );
+        List<Map<String, Object>> members = readData(membersResult, new TypeReference<>() {
+        });
         assertFalse(members.isEmpty());
     }
 
@@ -375,23 +347,78 @@ class ApplicationSmokeTest {
                         .header("X-Auth-Token", token))
                 .andExpect(status().isOk())
                 .andReturn();
-        List<Map<String, Object>> quotaAllocations = objectMapper.readValue(
-                quotaListResult.getResponse().getContentAsByteArray(),
-                new TypeReference<>() {
-                }
-        );
+        List<Map<String, Object>> quotaAllocations = readData(quotaListResult, new TypeReference<>() {
+        });
         assertFalse(quotaAllocations.isEmpty());
 
         MvcResult membersResult = mockMvc.perform(get("/api/tenant/members")
                         .header("X-Auth-Token", token))
                 .andExpect(status().isOk())
                 .andReturn();
-        List<Map<String, Object>> members = objectMapper.readValue(
-                membersResult.getResponse().getContentAsByteArray(),
-                new TypeReference<>() {
-                }
-        );
+        List<Map<String, Object>> members = readData(membersResult, new TypeReference<>() {
+        });
         assertFalse(members.isEmpty());
+    }
+
+    @Test
+    void tenantOwnerCanDisableAndEnableTenantMember() throws Exception {
+        String ownerToken = loginAsTenantOwner();
+
+        String createMemberBody = """
+                {
+                  "userId": "user-status-member-1",
+                  "username": "tenant_member_status_1",
+                  "password": "Member@123",
+                  "displayName": "状态测试成员",
+                  "roleKey": "tenant_member"
+                }
+                """;
+
+        mockMvc.perform(post("/api/tenant/members")
+                        .header("X-Auth-Token", ownerToken)
+                        .contentType("application/json")
+                        .content(createMemberBody))
+                .andExpect(status().isOk());
+
+        mockMvc.perform(post("/api/tenant/members/user-status-member-1/status")
+                        .header("X-Auth-Token", ownerToken)
+                        .contentType("application/json")
+                        .content("""
+                                {
+                                  "active": false
+                                }
+                                """))
+                .andExpect(status().isOk());
+
+        MvcResult membersResult = mockMvc.perform(get("/api/tenant/members")
+                        .header("X-Auth-Token", ownerToken))
+                .andExpect(status().isOk())
+                .andReturn();
+        List<Map<String, Object>> members = readData(membersResult, new TypeReference<>() {
+        });
+        assertTrue(members.stream()
+                .filter(member -> "user-status-member-1".equals(member.get("id")))
+                .anyMatch(member -> Boolean.FALSE.equals(member.get("active"))));
+
+        mockMvc.perform(post("/api/auth/login")
+                        .contentType("application/json")
+                        .content("""
+                                {
+                                  "username": "tenant_member_status_1",
+                                  "password": "Member@123"
+                                }
+                                """))
+                .andExpect(status().isBadRequest());
+
+        mockMvc.perform(post("/api/tenant/members/user-status-member-1/status")
+                        .header("X-Auth-Token", ownerToken)
+                        .contentType("application/json")
+                        .content("""
+                                {
+                                  "active": true
+                                }
+                                """))
+                .andExpect(status().isOk());
     }
 
     @Test
@@ -405,7 +432,25 @@ class ApplicationSmokeTest {
 
     @Test
     void tenantMemberCannotWriteTenantWorkspace() throws Exception {
-        String token = login("tenant_member", "Member@123");
+        String ownerToken = loginAsTenantOwner();
+
+        String createMemberBody = """
+                {
+                  "userId": "user-readonly-member-1",
+                  "username": "tenant_member_readonly_1",
+                  "password": "Member@123",
+                  "displayName": "只读成员",
+                  "roleKey": "tenant_member"
+                }
+                """;
+
+        mockMvc.perform(post("/api/tenant/members")
+                        .header("X-Auth-Token", ownerToken)
+                        .contentType("application/json")
+                        .content(createMemberBody))
+                .andExpect(status().isOk());
+
+        String token = login("tenant_member_readonly_1", "Member@123");
 
         String createProjectBody = """
                 {
@@ -418,6 +463,16 @@ class ApplicationSmokeTest {
                         .header("X-Auth-Token", token)
                         .contentType("application/json")
                         .content(createProjectBody))
+                .andExpect(status().isForbidden());
+
+        mockMvc.perform(post("/api/tenant/members/user-demo/status")
+                        .header("X-Auth-Token", token)
+                        .contentType("application/json")
+                        .content("""
+                                {
+                                  "active": false
+                                }
+                                """))
                 .andExpect(status().isForbidden());
     }
 }

@@ -1,0 +1,61 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper
+        PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+        "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.chj.aigc.persistence.mapper.ModelAccessMapper">
+
+    <select id="listRules" resultType="map">
+        select
+            id as id,
+            platform_model_alias as platformModelAlias,
+            scope_type as scopeType,
+            scope_value as scopeValue,
+            effect as effect,
+            active as active,
+            created_by as createdBy,
+            created_at as createdAt,
+            reason as reason
+        from model_access_rules
+        order by created_at asc
+    </select>
+
+    <select id="listAuditEvents" resultType="map">
+        select
+            id as id,
+            actor_id as actorId,
+            action as action,
+            target_model_alias as targetModelAlias,
+            target_scope_type as targetScopeType,
+            target_scope_value as targetScopeValue,
+            detail as detail,
+            created_at as createdAt
+        from model_access_audit_events
+        order by created_at asc
+    </select>
+
+    <insert id="upsertRule" parameterType="map">
+        insert into model_access_rules (
+            id, platform_model_alias, scope_type, scope_value, effect, active, created_by, created_at, reason
+        ) values (
+            #{id}, #{platformModelAlias}, #{scopeType}, #{scopeValue}, #{effect}, #{active}, #{createdBy}, #{createdAt}, #{reason}
+        )
+        on conflict (id) do update set
+            platform_model_alias = excluded.platform_model_alias,
+            scope_type = excluded.scope_type,
+            scope_value = excluded.scope_value,
+            effect = excluded.effect,
+            active = excluded.active,
+            created_by = excluded.created_by,
+            created_at = excluded.created_at,
+            reason = excluded.reason
+    </insert>
+
+    <insert id="insertAuditEvent" parameterType="map">
+        insert into model_access_audit_events (
+            id, actor_id, action, target_model_alias, target_scope_type, target_scope_value, detail, created_at
+        ) values (
+            #{id}, #{actorId}, #{action}, #{targetModelAlias}, #{targetScopeType}, #{targetScopeValue}, #{detail}, #{createdAt}
+        )
+        on conflict (id) do nothing
+    </insert>
+</mapper>

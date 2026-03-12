@@ -6,6 +6,8 @@ import java.util.Optional;
 public interface AuthStore {
     List<AuthUser> listUsers();
 
+    Optional<AuthUser> findUserById(String userId);
+
     Optional<AuthUser> findUserByUsername(String username);
 
     void saveUser(AuthUser user);

@@ -78,6 +78,7 @@ type DbInfoPayload = {
 
 type SessionPayload = {
   token: string;
+  userId: string;
   username: string;
   displayName: string;
   roleKey: string;
@@ -92,6 +93,12 @@ type UserPayload = {
   roleKey: string;
   tenantId: string | null;
   active: boolean;
+};
+
+type ApiResponse<T> = {
+  code: number;
+  message: string;
+  data: T;
 };
 
 const loading = ref(true);
@@ -199,6 +206,8 @@ const workspaceCopy = computed(() => isPlatformAdmin.value
 const quotaScopeOptions = computed(() => quotaForm.scopeType === "project"
   ? projects.value.map((project) => ({ value: project.id, label: project.name }))
   : members.value.map((member) => ({ value: member.id, label: `${member.displayName} (${member.username})` })));
+const projectNameMap = computed(() => new Map(projects.value.map((project) => [project.id, project.name])));
+const memberNameMap = computed(() => new Map(members.value.map((member) => [member.id, `${member.displayName} (${member.username})`])));
 
 // 统一附带令牌访问 API，失败时直接抛错交给页面底部状态栏展示。
 async function fetchJson<T>(url: string, init?: RequestInit): Promise<T> {
@@ -212,9 +221,22 @@ async function fetchJson<T>(url: string, init?: RequestInit): Promise<T> {
     headers,
   });
   if (!response.ok) {
-    throw new Error(`Request failed: ${response.status}`);
+    try {
+      const payload = await response.json() as ApiResponse<unknown>;
+      throw new Error(payload.message || `Request failed: ${response.status}`);
+    } catch {
+      throw new Error(`Request failed: ${response.status}`);
+    }
   }
-  return response.json() as Promise<T>;
+  const payload = await response.json() as ApiResponse<T> | T;
+  if (payload && typeof payload === "object" && "code" in payload && "data" in payload) {
+    const envelope = payload as ApiResponse<T>;
+    if (envelope.code !== 0) {
+      throw new Error(envelope.message || "请求失败");
+    }
+    return envelope.data;
+  }
+  return payload as T;
 }
 
 // 按当前登录角色加载对应工作台数据，避免平台侧继续看到租户内部项目明细。
@@ -314,7 +336,8 @@ async function login() {
     throw new Error("登录失败，请检查账号密码");
   }
 
-  const payload = await response.json() as SessionPayload;
+  const envelope = await response.json() as ApiResponse<SessionPayload>;
+  const payload = envelope.data;
   localStorage.setItem("chj_aigc_token", payload.token);
   session.value = payload;
   isAuthenticated.value = true;
@@ -351,6 +374,26 @@ function logout() {
   session.value = null;
   isAuthenticated.value = false;
   success.value = "";
+}
+
+function quotaScopeLabel(allocation: QuotaAllocationPayload) {
+  if (allocation.scopeType === "PROJECT") {
+    return projectNameMap.value.get(allocation.scopeId) ?? allocation.scopeId;
+  }
+  if (allocation.scopeType === "USER") {
+    return memberNameMap.value.get(allocation.scopeId) ?? allocation.scopeId;
+  }
+  return allocation.scopeId;
+}
+
+function quotaScopeTypeLabel(scopeType: string) {
+  if (scopeType === "PROJECT") {
+    return "项目";
+  }
+  if (scopeType === "USER") {
+    return "成员";
+  }
+  return scopeType;
 }
 
 // 平台超管创建模型访问规则。
@@ -447,6 +490,21 @@ async function createMember() {
   await loadDashboard();
 }
 
+// 租户负责人启用或停用成员，方便后续停权排查。
+async function updateMemberStatus(member: UserPayload, active: boolean) {
+  success.value = "";
+  error.value = "";
+  await fetchJson<UserPayload>(`/api/tenant/members/${member.id}/status`, {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json",
+    },
+    body: JSON.stringify({ active }),
+  });
+  success.value = `成员 ${member.displayName} 已${active ? "启用" : "停用"}`;
+  await loadDashboard();
+}
+
 // 租户负责人创建品牌。
 async function createBrand() {
   success.value = "";
@@ -501,7 +559,7 @@ onMounted(() => {
           <button class="action-button full-button" type="submit">登录系统</button>
         </form>
         <div class="login-tip">
-          演示账号：admin / Admin@123，tenant_owner / Tenant@123
+          演示账号：admin / Admin@123，tenant_owner / Tenant@123，tenant_member / Member@123
         </div>
       </div>
     </section>
@@ -745,8 +803,8 @@ onMounted(() => {
             <tbody>
               <tr v-for="allocation in quotaAllocations" :key="allocation.id">
                 <td>{{ allocation.id }}</td>
-                <td>{{ allocation.scopeType }}</td>
-                <td>{{ allocation.scopeId }}</td>
+                <td>{{ quotaScopeTypeLabel(allocation.scopeType) }}</td>
+                <td>{{ quotaScopeLabel(allocation) }}</td>
                 <td>{{ allocation.dimension }}</td>
                 <td>{{ allocation.limit }}</td>
                 <td>{{ allocation.used }}</td>
@@ -789,7 +847,25 @@ onMounted(() => {
             <ul class="card-list">
               <li v-for="member in members" :key="member.id">
                 <strong>{{ member.displayName }}</strong>
-                <div class="subtext">{{ member.roleKey }} · {{ member.username }}</div>
+                <div class="subtext">{{ member.roleKey }} · {{ member.username }} · {{ member.active ? "启用" : "停用" }}</div>
+                <div v-if="canManageTenantWorkspace" class="inline-actions">
+                  <button
+                    class="tiny-button"
+                    type="button"
+                    :disabled="session?.userId === member.id || member.active"
+                    @click="runAction(() => updateMemberStatus(member, true))"
+                  >
+                    启用
+                  </button>
+                  <button
+                    class="tiny-button danger-button"
+                    type="button"
+                    :disabled="session?.userId === member.id || !member.active"
+                    @click="runAction(() => updateMemberStatus(member, false))"
+                  >
+                    停用
+                  </button>
+                </div>
               </li>
             </ul>
           </div>

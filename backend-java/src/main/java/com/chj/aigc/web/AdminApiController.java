@@ -59,28 +59,28 @@ public class AdminApiController {
     }
 
     @GetMapping("/summary")
-    public Map<String, Object> summary() {
-        return Map.of(
+    public ApiResponse<Map<String, Object>> summary() {
+        return ApiResponse.success(Map.of(
                 "policies", store.listRules().size(),
                 "auditEvents", store.listAuditEvents().size(),
                 "users", authService.listUsers().size()
-        );
+        ));
     }
 
     @GetMapping("/roles")
-    public List<String> builtinRoles() {
-        return authService.builtinRoles();
+    public ApiResponse<List<String>> builtinRoles() {
+        return ApiResponse.success(authService.builtinRoles());
     }
 
     @GetMapping("/users")
-    public List<Map<String, Object>> users() {
-        return authService.listUsers().stream()
+    public ApiResponse<List<Map<String, Object>>> users() {
+        return ApiResponse.success(authService.listUsers().stream()
                 .map(this::serializeUser)
-                .toList();
+                .toList());
     }
 
     @PostMapping("/users")
-    public Map<String, Object> createUser(@RequestBody CreateUserRequest request) {
+    public ApiResponse<Map<String, Object>> createUser(@RequestBody CreateUserRequest request) {
         AuthUser user = authService.createUser(
                 request.userId(),
                 request.username(),
@@ -89,16 +89,16 @@ public class AdminApiController {
                 request.roleKey(),
                 request.tenantId() == null || request.tenantId().isBlank() ? null : request.tenantId()
         );
-        return serializeUser(user);
+        return ApiResponse.success(serializeUser(user));
     }
 
     @GetMapping("/model-access-rules")
-    public List<ModelAccessRule> modelAccessRules() {
-        return store.listRules();
+    public ApiResponse<List<ModelAccessRule>> modelAccessRules() {
+        return ApiResponse.success(store.listRules());
     }
 
     @PostMapping("/model-access-rules")
-    public ModelAccessRule createModelAccessRule(@RequestBody CreateModelAccessRuleRequest request) {
+    public ApiResponse<ModelAccessRule> createModelAccessRule(@RequestBody CreateModelAccessRuleRequest request) {
         ModelAccessRule rule = new ModelAccessRule(
                 request.ruleId(),
                 request.platformModelAlias(),
@@ -123,7 +123,7 @@ public class AdminApiController {
                 rule.reason(),
                 Instant.now()
         ));
-        return rule;
+        return ApiResponse.success(rule);
     }
 
     private Map<String, Object> serializeUser(AuthUser user) {

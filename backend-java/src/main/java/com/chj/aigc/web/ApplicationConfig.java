@@ -4,27 +4,40 @@ import com.chj.aigc.auth.AuthInterceptor;
 import com.chj.aigc.auth.AuthService;
 import com.chj.aigc.auth.AuthStore;
 import com.chj.aigc.auth.InMemoryAuthStore;
-import com.chj.aigc.auth.JdbcAuthStore;
+import com.chj.aigc.auth.MybatisAuthStore;
 import com.chj.aigc.access.ModelAccessPolicyEngine;
 import com.chj.aigc.access.ModelAccessAdminStore;
 import com.chj.aigc.access.InMemoryModelAccessAdminStore;
-import com.chj.aigc.access.JdbcModelAccessAdminStore;
+import com.chj.aigc.access.MybatisModelAccessAdminStore;
 import com.chj.aigc.billing.InMemoryTenantBillingStore;
-import com.chj.aigc.billing.JdbcTenantBillingStore;
+import com.chj.aigc.billing.MybatisTenantBillingStore;
 import com.chj.aigc.billing.TenantBillingService;
 import com.chj.aigc.billing.TenantBillingStore;
 import com.chj.aigc.asset.AssetCatalogStore;
 import com.chj.aigc.asset.InMemoryAssetCatalogStore;
-import com.chj.aigc.asset.JdbcAssetCatalogStore;
+import com.chj.aigc.asset.MybatisAssetCatalogStore;
 import com.chj.aigc.asset.TenantAssetCatalogService;
 import com.chj.aigc.tenant.InMemoryTenantProjectStore;
-import com.chj.aigc.tenant.JdbcTenantProjectStore;
+import com.chj.aigc.tenant.MybatisTenantProjectStore;
 import com.chj.aigc.tenant.TenantProjectStore;
 import com.chj.aigc.tenant.TenantWorkspaceService;
+import com.chj.aigc.persistence.mapper.AssetCatalogMapper;
+import com.chj.aigc.persistence.mapper.AuthMapper;
+import com.chj.aigc.persistence.mapper.ModelAccessMapper;
+import com.chj.aigc.persistence.mapper.TenantBillingMapper;
+import com.chj.aigc.persistence.mapper.TenantProjectMapper;
+import com.baomidou.mybatisplus.core.MybatisConfiguration;
+import com.baomidou.mybatisplus.extension.spring.MybatisSqlSessionFactoryBean;
+import com.zaxxer.hikari.HikariDataSource;
+import javax.sql.DataSource;
+import org.apache.ibatis.session.SqlSessionFactory;
+import org.mybatis.spring.SqlSessionTemplate;
+import org.springframework.beans.factory.annotation.Value;
+import org.springframework.boot.autoconfigure.condition.ConditionalOnMissingBean;
 import org.springframework.beans.factory.ObjectProvider;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
-import org.springframework.jdbc.core.JdbcTemplate;
+import org.springframework.core.io.support.PathMatchingResourcePatternResolver;
 import org.springframework.web.servlet.config.annotation.InterceptorRegistry;
 import org.springframework.web.servlet.config.annotation.CorsRegistry;
 import org.springframework.web.servlet.config.annotation.WebMvcConfigurer;
@@ -35,24 +48,56 @@ public class ApplicationConfig {
      * 统一装配 Web、鉴权、存储和租户工作台相关组件。
      */
     @Bean
+    @ConditionalOnMissingBean(DataSource.class)
+    public DataSource dataSource(
+            @Value("${spring.datasource.url:jdbc:postgresql://36.150.108.207:54312/chj-aigc}") String url,
+            @Value("${spring.datasource.username:postgres}") String username,
+            @Value("${spring.datasource.password:${APP_DB_PASSWORD:}}") String password,
+            @Value("${spring.datasource.driver-class-name:org.postgresql.Driver}") String driverClassName
+    ) {
+        HikariDataSource dataSource = new HikariDataSource();
+        dataSource.setJdbcUrl(url);
+        dataSource.setUsername(username);
+        dataSource.setPassword(password);
+        dataSource.setDriverClassName(driverClassName);
+        return dataSource;
+    }
+
+    @Bean
+    public SqlSessionFactory sqlSessionFactory(DataSource dataSource) throws Exception {
+        MybatisSqlSessionFactoryBean factoryBean = new MybatisSqlSessionFactoryBean();
+        factoryBean.setDataSource(dataSource);
+        factoryBean.setMapperLocations(new PathMatchingResourcePatternResolver().getResources("classpath*:mapper/*.xml"));
+        MybatisConfiguration configuration = new MybatisConfiguration();
+        configuration.setMapUnderscoreToCamelCase(true);
+        factoryBean.setConfiguration(configuration);
+        return factoryBean.getObject();
+    }
+
+    @Bean
+    public SqlSessionTemplate sqlSessionTemplate(SqlSessionFactory sqlSessionFactory) {
+        return new SqlSessionTemplate(sqlSessionFactory);
+    }
+
+    @Bean
     public ModelAccessPolicyEngine modelAccessPolicyEngine() {
         return new ModelAccessPolicyEngine();
     }
 
     @Bean
-    public ModelAccessAdminStore modelAccessAdminStore(ObjectProvider<JdbcTemplate> jdbcTemplateProvider) {
-        JdbcTemplate jdbcTemplate = jdbcTemplateProvider.getIfAvailable();
-        if (jdbcTemplate != null) {
-            return new JdbcModelAccessAdminStore(jdbcTemplate);
+    public ModelAccessAdminStore modelAccessAdminStore(ObjectProvider<ModelAccessMapper> mapperProvider) {
+        ModelAccessMapper mapper = mapperProvider.getIfAvailable();
+        if (mapper != null) {
+            return new MybatisModelAccessAdminStore(mapper);
         }
         return new InMemoryModelAccessAdminStore();
     }
 
     @Bean
-    public AuthStore authStore(ObjectProvider<JdbcTemplate> jdbcTemplateProvider) {
-        JdbcTemplate jdbcTemplate = jdbcTemplateProvider.getIfAvailable();
-        if (jdbcTemplate != null) {
-            return new JdbcAuthStore(jdbcTemplate);
+    public AuthStore authStore(ObjectProvider<AuthMapper> mapperProvider) {
+        AuthMapper mapper = mapperProvider.getIfAvailable();
+        if (mapper != null) {
+            return new MybatisAuthStore(mapper);
         }
         return new InMemoryAuthStore();
     }
@@ -63,10 +108,10 @@ public class ApplicationConfig {
     }
 
     @Bean
-    public TenantBillingStore tenantBillingStore(ObjectProvider<JdbcTemplate> jdbcTemplateProvider) {
-        JdbcTemplate jdbcTemplate = jdbcTemplateProvider.getIfAvailable();
-        if (jdbcTemplate != null) {
-            return new JdbcTenantBillingStore(jdbcTemplate);
+    public TenantBillingStore tenantBillingStore(ObjectProvider<TenantBillingMapper> mapperProvider) {
+        TenantBillingMapper mapper = mapperProvider.getIfAvailable();
+        if (mapper != null) {
+            return new MybatisTenantBillingStore(mapper);
         }
         return new InMemoryTenantBillingStore();
     }
@@ -77,10 +122,10 @@ public class ApplicationConfig {
     }
 
     @Bean
-    public AssetCatalogStore assetCatalogStore(ObjectProvider<JdbcTemplate> jdbcTemplateProvider) {
-        JdbcTemplate jdbcTemplate = jdbcTemplateProvider.getIfAvailable();
-        if (jdbcTemplate != null) {
-            return new JdbcAssetCatalogStore(jdbcTemplate);
+    public AssetCatalogStore assetCatalogStore(ObjectProvider<AssetCatalogMapper> mapperProvider) {
+        AssetCatalogMapper mapper = mapperProvider.getIfAvailable();
+        if (mapper != null) {
+            return new MybatisAssetCatalogStore(mapper);
         }
         return new InMemoryAssetCatalogStore();
     }
@@ -91,10 +136,10 @@ public class ApplicationConfig {
     }
 
     @Bean
-    public TenantProjectStore tenantProjectStore(ObjectProvider<JdbcTemplate> jdbcTemplateProvider) {
-        JdbcTemplate jdbcTemplate = jdbcTemplateProvider.getIfAvailable();
-        if (jdbcTemplate != null) {
-            return new JdbcTenantProjectStore(jdbcTemplate);
+    public TenantProjectStore tenantProjectStore(ObjectProvider<TenantProjectMapper> mapperProvider) {
+        TenantProjectMapper mapper = mapperProvider.getIfAvailable();
+        if (mapper != null) {
+            return new MybatisTenantProjectStore(mapper);
         }
         return new InMemoryTenantProjectStore();
     }

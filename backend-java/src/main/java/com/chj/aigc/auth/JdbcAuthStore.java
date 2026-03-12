@@ -27,6 +27,20 @@ public final class JdbcAuthStore implements AuthStore {
     }
 
     @Override
+    public Optional<AuthUser> findUserById(String userId) {
+        List<AuthUser> results = jdbcTemplate.query(
+                """
+                select id, username, password, display_name, role_key, tenant_id, active
+                from auth_users
+                where id = ?
+                """,
+                this::mapUser,
+                userId
+        );
+        return results.stream().findFirst();
+    }
+
+    @Override
     public Optional<AuthUser> findUserByUsername(String username) {
         List<AuthUser> results = jdbcTemplate.query(
                 """

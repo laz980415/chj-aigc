@@ -21,6 +21,7 @@ import com.chj.aigc.web.dto.CreateBrandRequest;
 import com.chj.aigc.web.dto.CreateClientRequest;
 import com.chj.aigc.web.dto.CreateTenantMemberRequest;
 import com.chj.aigc.web.dto.RechargeRequest;
+import com.chj.aigc.web.dto.UpdateTenantMemberStatusRequest;
 import com.chj.aigc.web.dto.UpsertQuotaRequest;
 import jakarta.servlet.http.HttpServletRequest;
 import java.math.BigDecimal;
@@ -61,30 +62,30 @@ public class TenantApiController {
     }
 
     @GetMapping("/wallet")
-    public Map<String, Object> wallet() {
-        return tenantBillingService.walletSnapshot("tenant-demo");
+    public ApiResponse<Map<String, Object>> wallet(HttpServletRequest httpRequest) {
+        return ApiResponse.success(tenantBillingService.walletSnapshot(resolveTenantId(httpRequest)));
     }
 
     @PostMapping("/wallet/recharge")
-    public Map<String, Object> recharge(@RequestBody RechargeRequest request, HttpServletRequest httpRequest) {
+    public ApiResponse<Map<String, Object>> recharge(@RequestBody RechargeRequest request, HttpServletRequest httpRequest) {
         requireAnyRole(httpRequest, "platform_super_admin", "tenant_owner");
-        return tenantBillingService.recharge(
-                "tenant-demo",
+        return ApiResponse.success(tenantBillingService.recharge(
+                resolveTenantId(httpRequest),
                 request.entryId(),
                 Money.of(request.amount()),
                 request.description(),
                 request.referenceId()
-        );
+        ));
     }
 
     @GetMapping("/quotas")
-    public Map<String, Object> quotas() {
-        return tenantBillingService.quotaSnapshot("tenant-demo");
+    public ApiResponse<Map<String, Object>> quotas(HttpServletRequest httpRequest) {
+        return ApiResponse.success(tenantBillingService.quotaSnapshot(resolveTenantId(httpRequest)));
     }
 
     @GetMapping("/quota-allocations")
-    public List<Map<String, Object>> quotaAllocations() {
-        return tenantBillingService.listQuotaAllocations("tenant-demo").stream()
+    public ApiResponse<List<Map<String, Object>>> quotaAllocations(HttpServletRequest httpRequest) {
+        return ApiResponse.success(tenantBillingService.listQuotaAllocations(resolveTenantId(httpRequest)).stream()
                 .map(allocation -> Map.<String, Object>of(
                         "id", allocation.id(),
                         "scopeType", allocation.scope().scopeType().name(),
@@ -93,15 +94,15 @@ public class TenantApiController {
                         "limit", allocation.limit(),
                         "used", allocation.used()
                 ))
-                .toList();
+                .toList());
     }
 
     @PostMapping("/quotas")
-    public Map<String, Object> upsertQuota(@RequestBody UpsertQuotaRequest request, HttpServletRequest httpRequest) {
+    public ApiResponse<Map<String, Object>> upsertQuota(@RequestBody UpsertQuotaRequest request, HttpServletRequest httpRequest) {
         requireAnyRole(httpRequest, "tenant_owner");
-        return tenantBillingService.upsertQuota(new QuotaAllocation(
+        return ApiResponse.success(tenantBillingService.upsertQuota(new QuotaAllocation(
                 request.allocationId(),
-                "tenant-demo",
+                resolveTenantId(httpRequest),
                 new QuotaScope(
                         QuotaScopeType.valueOf(request.scopeType().toUpperCase()),
                         request.scopeId()
@@ -109,38 +110,38 @@ public class TenantApiController {
                 QuotaDimension.valueOf(request.dimension().toUpperCase()),
                 new BigDecimal(request.limit()),
                 new BigDecimal(request.used())
-        ));
+        )));
     }
 
     @GetMapping("/clients")
-    public List<Client> clients() {
-        return tenantAssetCatalogService.clients("tenant-demo");
+    public ApiResponse<List<Client>> clients(HttpServletRequest httpRequest) {
+        return ApiResponse.success(tenantAssetCatalogService.clients(resolveTenantId(httpRequest)));
     }
 
     @GetMapping("/projects")
-    public List<TenantProject> projects() {
-        return tenantWorkspaceService.projects("tenant-demo");
+    public ApiResponse<List<TenantProject>> projects(HttpServletRequest httpRequest) {
+        return ApiResponse.success(tenantWorkspaceService.projects(resolveTenantId(httpRequest)));
     }
 
     @PostMapping("/projects")
-    public TenantProject createProject(@RequestBody CreateProjectRequest request, HttpServletRequest httpRequest) {
+    public ApiResponse<TenantProject> createProject(@RequestBody CreateProjectRequest request, HttpServletRequest httpRequest) {
         requireAnyRole(httpRequest, "tenant_owner");
-        return tenantWorkspaceService.createProject(
+        return ApiResponse.success(tenantWorkspaceService.createProject(
                 request.projectId(),
-                "tenant-demo",
+                resolveTenantId(httpRequest),
                 request.name()
-        );
+        ));
     }
 
     @GetMapping("/members")
-    public List<Map<String, Object>> members() {
-        return tenantWorkspaceService.members("tenant-demo").stream()
+    public ApiResponse<List<Map<String, Object>>> members(HttpServletRequest httpRequest) {
+        return ApiResponse.success(authService.listTenantUsers(resolveTenantId(httpRequest)).stream()
                 .map(this::serializeUser)
-                .toList();
+                .toList());
     }
 
     @PostMapping("/members")
-    public Map<String, Object> createMember(@RequestBody CreateTenantMemberRequest request, HttpServletRequest httpRequest) {
+    public ApiResponse<Map<String, Object>> createMember(@RequestBody CreateTenantMemberRequest request, HttpServletRequest httpRequest) {
         requireAnyRole(httpRequest, "tenant_owner");
         AuthUser user = authService.createTenantUser(
                 request.userId(),
@@ -148,53 +149,80 @@ public class TenantApiController {
                 request.password(),
                 request.displayName(),
                 request.roleKey(),
-                "tenant-demo"
+                resolveTenantId(httpRequest)
         );
-        return serializeUser(user);
+        return ApiResponse.success(serializeUser(user));
+    }
+
+    @PostMapping("/members/{userId}/status")
+    public ApiResponse<Map<String, Object>> updateMemberStatus(
+            @PathVariable String userId,
+            @RequestBody UpdateTenantMemberStatusRequest request,
+            HttpServletRequest httpRequest
+    ) {
+        requireAnyRole(httpRequest, "tenant_owner");
+        AuthSession session = currentSession(httpRequest);
+        if (session != null && session.userId().equals(userId) && !request.active()) {
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "不能停用当前登录的租户负责人");
+        }
+        AuthUser user = authService.updateTenantUserStatus(userId, resolveTenantId(httpRequest), request.active());
+        return ApiResponse.success(serializeUser(user));
     }
 
     @PostMapping("/clients")
-    public Client createClient(@RequestBody CreateClientRequest request, HttpServletRequest httpRequest) {
+    public ApiResponse<Client> createClient(@RequestBody CreateClientRequest request, HttpServletRequest httpRequest) {
         requireAnyRole(httpRequest, "tenant_owner");
-        return tenantAssetCatalogService.createClient(
+        return ApiResponse.success(tenantAssetCatalogService.createClient(
                 request.clientId(),
-                "tenant-demo",
+                resolveTenantId(httpRequest),
                 request.name()
-        );
+        ));
     }
 
     @GetMapping("/brands/{clientId}")
-    public List<Brand> brands(@PathVariable String clientId) {
-        return tenantAssetCatalogService.brands("tenant-demo", clientId);
+    public ApiResponse<List<Brand>> brands(@PathVariable String clientId, HttpServletRequest httpRequest) {
+        return ApiResponse.success(tenantAssetCatalogService.brands(resolveTenantId(httpRequest), clientId));
     }
 
     @GetMapping("/brands")
-    public List<Brand> allBrands() {
-        return tenantAssetCatalogService.brands("tenant-demo", null);
+    public ApiResponse<List<Brand>> allBrands(HttpServletRequest httpRequest) {
+        return ApiResponse.success(tenantAssetCatalogService.brands(resolveTenantId(httpRequest), null));
     }
 
     @PostMapping("/brands")
-    public Brand createBrand(@RequestBody CreateBrandRequest request, HttpServletRequest httpRequest) {
+    public ApiResponse<Brand> createBrand(@RequestBody CreateBrandRequest request, HttpServletRequest httpRequest) {
         requireAnyRole(httpRequest, "tenant_owner");
-        return tenantAssetCatalogService.createBrand(
+        return ApiResponse.success(tenantAssetCatalogService.createBrand(
                 request.brandId(),
-                "tenant-demo",
+                resolveTenantId(httpRequest),
                 request.clientId(),
                 request.name(),
                 request.summary()
-        );
+        ));
     }
 
     @GetMapping("/assets")
-    public List<Asset> assets() {
-        return tenantAssetCatalogService.assets("tenant-demo");
+    public ApiResponse<List<Asset>> assets(HttpServletRequest httpRequest) {
+        return ApiResponse.success(tenantAssetCatalogService.assets(resolveTenantId(httpRequest)));
     }
 
     private void requireAnyRole(HttpServletRequest request, String... roleKeys) {
-        AuthSession session = (AuthSession) request.getAttribute(AuthInterceptor.REQUEST_SESSION_KEY);
+        AuthSession session = currentSession(request);
         if (session == null || !Set.of(roleKeys).contains(session.roleKey())) {
             throw new ResponseStatusException(HttpStatus.FORBIDDEN, "当前账号没有执行该租户操作的权限");
         }
+    }
+
+    private AuthSession currentSession(HttpServletRequest request) {
+        return (AuthSession) request.getAttribute(AuthInterceptor.REQUEST_SESSION_KEY);
+    }
+
+    private String resolveTenantId(HttpServletRequest request) {
+        AuthSession session = currentSession(request);
+        if (session != null && session.tenantId() != null && !session.tenantId().isBlank()) {
+            return session.tenantId();
+        }
+        return "tenant-demo";
     }
 
     private Map<String, Object> serializeUser(AuthUser user) {

@@ -55,6 +55,16 @@ public final class AuthService {
     }
 
     /**
+     * 返回指定租户下的成员账号，平台账号不会出现在这个列表里。
+     */
+    public List<AuthUser> listTenantUsers(String tenantId) {
+        return authStore.listUsers().stream()
+                .filter(user -> tenantId.equals(user.tenantId()))
+                .filter(user -> List.of("tenant_owner", "tenant_member").contains(user.roleKey()))
+                .toList();
+    }
+
+    /**
      * 创建任意角色账号，主要给平台超管使用。
      */
     public AuthUser createUser(
@@ -96,6 +106,32 @@ public final class AuthService {
             throw new IllegalArgumentException("租户成员必须绑定租户");
         }
         return createUser(userId, username, password, displayName, roleKey, tenantId);
+    }
+
+    /**
+     * 更新租户成员启用状态。
+     * 只允许处理当前租户下的租户角色账号，避免平台超管或其他租户账号被误修改。
+     */
+    public AuthUser updateTenantUserStatus(String userId, String tenantId, boolean active) {
+        AuthUser existing = authStore.findUserById(userId)
+                .orElseThrow(() -> new IllegalArgumentException("成员不存在"));
+        if (!tenantId.equals(existing.tenantId())) {
+            throw new IllegalArgumentException("只能修改当前租户下的成员");
+        }
+        if (!List.of("tenant_owner", "tenant_member").contains(existing.roleKey())) {
+            throw new IllegalArgumentException("只能修改租户成员状态");
+        }
+        AuthUser updated = new AuthUser(
+                existing.id(),
+                existing.username(),
+                existing.password(),
+                existing.displayName(),
+                existing.roleKey(),
+                existing.tenantId(),
+                active
+        );
+        authStore.saveUser(updated);
+        return updated;
     }
 
     public List<String> builtinRoles() {
