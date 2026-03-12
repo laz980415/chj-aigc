@@ -53,6 +53,13 @@ Set-Location infra\nacos
 docker compose up -d
 ```
 
+Start Java microservices through Nacos discovery:
+
+```powershell
+Set-Location infra\dev
+.\start-microservices-with-nacos.ps1
+```
+
 Optional environment variables:
 - `APP_DB_URL`
 - `APP_DB_USERNAME`

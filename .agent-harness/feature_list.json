@@ -412,6 +412,10 @@
         {
           "at": "2026-03-12T07:55:00+00:00",
           "note": "Extended backend-tenant-service with tenant wallet snapshot and mock WeChat payment order APIs, and added non-Docker local Nacos download/start/stop PowerShell scripts for Windows development."
+        },
+        {
+          "at": "2026-03-12T08:05:00+00:00",
+          "note": "Added a discovery profile for backend-gateway-service with lb:// routes and added local PowerShell scripts to start platform service, tenant service, and gateway service through Nacos registration and discovery."
         }
       ]
     },

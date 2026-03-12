@@ -57,6 +57,15 @@ Set-Location E:\ai-workspaces\infra\nacos
 如果本机有 Docker，也可以继续使用 `docker compose up -d`。
 两种方式都会在本地启动 `Nacos 2.4.1` 单机开发服务。
 
+仓库里也补了基于 Nacos 的本地微服务启动脚本：
+
+- `infra/dev/start-platform-service.ps1`
+- `infra/dev/start-tenant-service.ps1`
+- `infra/dev/start-gateway-service.ps1`
+- `infra/dev/start-microservices-with-nacos.ps1`
+
+其中网关通过 `application-discovery.yml` 切到 `lb://` 服务发现路由。
+
 ## 官方兼容版本
 
 这轮按官方兼容组合收口：
@@ -136,6 +145,10 @@ Set-Location E:\ai-workspaces\infra\nacos
 - 租户服务：`http://127.0.0.1:8082`
 
 当前网关配置既支持本地直连 URI，也为后续改成 `lb://` 服务发现路由预留了位置。
+现在仓库已经提供 `discovery` profile，启用后会直接走：
+
+- `lb://chj-aigc-platform-service`
+- `lb://chj-aigc-tenant-service`
 
 ## 当前迁移进度
 

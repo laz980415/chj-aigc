@@ -1,0 +1,24 @@
+spring:
+  cloud:
+    gateway:
+      routes:
+        - id: tenant-auth-api
+          uri: lb://chj-aigc-tenant-service
+          predicates:
+            - Path=/api/auth/**
+        - id: tenant-workspace-api
+          uri: lb://chj-aigc-tenant-service
+          predicates:
+            - Path=/api/tenant/**
+        - id: platform-api
+          uri: lb://chj-aigc-platform-service
+          predicates:
+            - Path=/api/**
+          filters:
+            - DedupeResponseHeader=Access-Control-Allow-Origin Access-Control-Allow-Credentials
+        - id: tenant-service
+          uri: lb://chj-aigc-tenant-service
+          predicates:
+            - Path=/tenant-api/**
+          filters:
+            - StripPrefix=1
