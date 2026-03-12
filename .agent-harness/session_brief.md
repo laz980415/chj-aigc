@@ -4,22 +4,22 @@ Project: AIGC Advertising SaaS Platform
 
 ## Status Snapshot
 
-- Pending: 6
+- Pending: 5
 - In progress: 1
 - Blocked: 0
-- Done: 5
+- Done: 6
 
 ## Recommended Next Feature
 
-- ID: feature-006
-- Title: Implement super-admin model access control
+- ID: feature-007
+- Title: Implement brand, client, and asset library domain
 - State: in_progress
-- Description: Allow super admins through Java admin APIs to control which tenants, roles, or projects can use which platform models.
-- Depends on: feature-002, feature-003
+- Description: Support advertiser clients, their brands, and brand-scoped assets and rules inside each tenant.
+- Depends on: feature-002
 - Acceptance criteria:
-  - Super admin can enable or disable models by scope
-  - Model access policy is enforced before every generation request
-  - Policy decisions are auditable
+  - Tenant can manage clients and brands
+  - Assets can be tagged to tenant, project, client, and brand
+  - Brand rules support style guidance and forbidden statements
 
 ## Session Rules
 

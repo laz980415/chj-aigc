@@ -26,3 +26,8 @@ Validation: Ran python -m unittest discover -s tests -v and verified billing tes
 Implemented a Java Maven module for tenant finance with wallet ledger entries, recharge and usage deduction services, quota allocations for project and user scopes, and quota consumption checks across token, image, video, daily-request, and concurrency dimensions.
 
 Validation: Ran mvn test in backend-java and python -m unittest discover -s tests -v in the repository root; both test suites passed.
+
+## 2026-03-12T04:58:53+00:00 - feature-006 - Implement super-admin model access control
+Implemented Java-side model access control with scoped allow/deny rules for tenants, projects, and roles, plus deterministic policy evaluation and audit events for rule creation and disable actions.
+
+Validation: Ran mvn test in backend-java and python -m unittest discover -s tests -v; Java tests verified project-over-tenant precedence, role-based grants, default deny behavior, and audit event creation.
