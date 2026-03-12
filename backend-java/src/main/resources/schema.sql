@@ -52,6 +52,19 @@ create table if not exists tenant_wallet_ledger (
     created_at timestamp with time zone not null
 );
 
+create table if not exists tenant_payment_orders (
+    id varchar(128) primary key,
+    tenant_id varchar(128) not null,
+    channel varchar(64) not null,
+    status varchar(64) not null,
+    amount numeric(18, 4) not null,
+    description varchar(512) not null,
+    reference_id varchar(128) not null,
+    qr_code varchar(512) not null,
+    created_at timestamp with time zone not null,
+    paid_at timestamp with time zone
+);
+
 create table if not exists tenant_quota_allocations (
     id varchar(128) primary key,
     tenant_id varchar(128) not null,
@@ -146,6 +159,18 @@ comment on column tenant_wallet_ledger.amount is '本次流水金额。';
 comment on column tenant_wallet_ledger.description is '流水说明。';
 comment on column tenant_wallet_ledger.reference_id is '业务引用 ID，例如订单号或页面操作号。';
 comment on column tenant_wallet_ledger.created_at is '流水创建时间。';
+
+comment on table tenant_payment_orders is '租户支付订单表，记录微信支付下单和模拟支付状态。';
+comment on column tenant_payment_orders.id is '支付订单主键 ID。';
+comment on column tenant_payment_orders.tenant_id is '所属租户 ID。';
+comment on column tenant_payment_orders.channel is '支付渠道，当前为微信原生支付。';
+comment on column tenant_payment_orders.status is '支付订单状态，例如 PENDING、PAID。';
+comment on column tenant_payment_orders.amount is '订单支付金额。';
+comment on column tenant_payment_orders.description is '支付说明。';
+comment on column tenant_payment_orders.reference_id is '支付业务引用 ID。';
+comment on column tenant_payment_orders.qr_code is '模拟支付二维码或拉起链接。';
+comment on column tenant_payment_orders.created_at is '支付订单创建时间。';
+comment on column tenant_payment_orders.paid_at is '支付完成时间，未支付时为空。';
 
 comment on table tenant_quota_allocations is '租户额度分配表，保存项目或成员的额度上限和已用量。';
 comment on column tenant_quota_allocations.id is '额度分配主键 ID。';

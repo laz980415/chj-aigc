@@ -7,6 +7,12 @@ public interface TenantBillingStore {
 
     void saveLedgerEntry(WalletLedgerEntry entry);
 
+    List<PaymentOrder> listPaymentOrders(String tenantId);
+
+    PaymentOrder findPaymentOrder(String orderId);
+
+    void savePaymentOrder(PaymentOrder order);
+
     List<QuotaAllocation> listQuotaAllocations(String tenantId);
 
     void saveQuotaAllocation(QuotaAllocation allocation);

@@ -3,6 +3,7 @@ package com.chj.aigc.billing;
 import com.chj.aigc.persistence.RowValueHelper;
 import com.chj.aigc.persistence.mapper.TenantBillingMapper;
 import java.sql.Timestamp;
+import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 
@@ -34,6 +35,38 @@ public final class MybatisTenantBillingStore implements TenantBillingStore {
                 "referenceId", entry.referenceId(),
                 "createdAt", Timestamp.from(entry.createdAt())
         ));
+    }
+
+    @Override
+    public List<PaymentOrder> listPaymentOrders(String tenantId) {
+        return mapper.listPaymentOrders(tenantId).stream()
+                .map(this::mapPaymentOrder)
+                .toList();
+    }
+
+    @Override
+    public PaymentOrder findPaymentOrder(String orderId) {
+        Map<String, Object> row = mapper.findPaymentOrder(orderId);
+        if (row == null || row.isEmpty()) {
+            return null;
+        }
+        return mapPaymentOrder(row);
+    }
+
+    @Override
+    public void savePaymentOrder(PaymentOrder order) {
+        Map<String, Object> payload = new LinkedHashMap<>();
+        payload.put("id", order.id());
+        payload.put("tenantId", order.tenantId());
+        payload.put("channel", order.channel().name());
+        payload.put("status", order.status().name());
+        payload.put("amount", order.amount().amount());
+        payload.put("description", order.description());
+        payload.put("referenceId", order.referenceId());
+        payload.put("qrCode", order.qrCode());
+        payload.put("createdAt", Timestamp.from(order.createdAt()));
+        payload.put("paidAt", order.paidAt() == null ? null : Timestamp.from(order.paidAt()));
+        mapper.upsertPaymentOrder(payload);
     }
 
     @Override
@@ -79,6 +112,22 @@ public final class MybatisTenantBillingStore implements TenantBillingStore {
                 QuotaDimension.valueOf(RowValueHelper.string(row, "dimension")),
                 RowValueHelper.decimal(row, "limitValue", "limit_value"),
                 RowValueHelper.decimal(row, "usedValue", "used_value")
+        );
+    }
+
+    private PaymentOrder mapPaymentOrder(Map<String, Object> row) {
+        Timestamp paidAt = RowValueHelper.timestamp(row, "paidAt", "paid_at");
+        return new PaymentOrder(
+                RowValueHelper.string(row, "id"),
+                RowValueHelper.string(row, "tenantId", "tenant_id"),
+                PaymentChannel.valueOf(RowValueHelper.string(row, "channel")),
+                PaymentOrderStatus.valueOf(RowValueHelper.string(row, "status")),
+                new Money(RowValueHelper.decimal(row, "amount")),
+                RowValueHelper.string(row, "description"),
+                RowValueHelper.string(row, "referenceId", "reference_id"),
+                RowValueHelper.string(row, "qrCode", "qr_code"),
+                RowValueHelper.timestamp(row, "createdAt", "created_at").toInstant(),
+                paidAt == null ? null : paidAt.toInstant()
         );
     }
 }

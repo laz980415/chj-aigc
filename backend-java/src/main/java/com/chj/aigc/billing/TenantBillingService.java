@@ -1,6 +1,7 @@
 package com.chj.aigc.billing;
 
 import java.math.BigDecimal;
+import java.time.Instant;
 import java.util.List;
 import java.util.LinkedHashMap;
 import java.util.Map;
@@ -51,6 +52,77 @@ public final class TenantBillingService {
     }
 
     /**
+     * 创建模拟微信支付订单。
+     * 订单创建后不会立即到账，需再走一次“模拟支付成功”把订单转为已支付并写入钱包流水。
+     */
+    public Map<String, Object> createMockWeChatPaymentOrder(
+            String tenantId,
+            String orderId,
+            Money amount,
+            String description,
+            String referenceId
+    ) {
+        PaymentOrder order = new PaymentOrder(
+                orderId,
+                tenantId,
+                PaymentChannel.WECHAT_NATIVE,
+                PaymentOrderStatus.PENDING,
+                amount,
+                description,
+                referenceId,
+                "weixin://mock-pay/" + orderId,
+                Instant.now(),
+                null
+        );
+        store.savePaymentOrder(order);
+        return serializePaymentOrder(order);
+    }
+
+    /**
+     * 将模拟支付订单标记为已支付，并把充值金额写入租户钱包。
+     */
+    public Map<String, Object> markPaymentOrderPaid(String orderId) {
+        PaymentOrder existing = store.findPaymentOrder(orderId);
+        if (existing == null) {
+            throw new IllegalArgumentException("支付订单不存在");
+        }
+        if (existing.status() == PaymentOrderStatus.PAID) {
+            return serializePaymentOrder(existing);
+        }
+
+        PaymentOrder paidOrder = new PaymentOrder(
+                existing.id(),
+                existing.tenantId(),
+                existing.channel(),
+                PaymentOrderStatus.PAID,
+                existing.amount(),
+                existing.description(),
+                existing.referenceId(),
+                existing.qrCode(),
+                existing.createdAt(),
+                Instant.now()
+        );
+        store.savePaymentOrder(paidOrder);
+        recharge(
+                paidOrder.tenantId(),
+                "ledger-" + paidOrder.id(),
+                paidOrder.amount(),
+                "微信支付到账：" + paidOrder.description(),
+                paidOrder.referenceId()
+        );
+        return serializePaymentOrder(paidOrder);
+    }
+
+    /**
+     * 返回租户下的支付订单列表。
+     */
+    public List<Map<String, Object>> paymentOrders(String tenantId) {
+        return store.listPaymentOrders(tenantId).stream()
+                .map(this::serializePaymentOrder)
+                .toList();
+    }
+
+    /**
      * 返回租户钱包流水明细，供平台超管查看充值与扣费记录。
      */
     public List<Map<String, Object>> ledgerEntries(String tenantId) {
@@ -74,6 +146,21 @@ public final class TenantBillingService {
      */
     public List<QuotaAllocation> listQuotaAllocations(String tenantId) {
         return store.listQuotaAllocations(tenantId);
+    }
+
+    private Map<String, Object> serializePaymentOrder(PaymentOrder order) {
+        Map<String, Object> payload = new LinkedHashMap<>();
+        payload.put("id", order.id());
+        payload.put("tenantId", order.tenantId());
+        payload.put("channel", order.channel().name());
+        payload.put("status", order.status().name());
+        payload.put("amount", order.amount().amount().toPlainString());
+        payload.put("description", order.description());
+        payload.put("referenceId", order.referenceId());
+        payload.put("qrCode", order.qrCode());
+        payload.put("createdAt", order.createdAt());
+        payload.put("paidAt", order.paidAt());
+        return payload;
     }
 
     private TenantWallet wallet(String tenantId) {

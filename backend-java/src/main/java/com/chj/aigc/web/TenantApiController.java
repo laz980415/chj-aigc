@@ -17,6 +17,7 @@ import com.chj.aigc.billing.TenantBillingService;
 import com.chj.aigc.tenant.TenantProject;
 import com.chj.aigc.tenant.TenantWorkspaceService;
 import com.chj.aigc.web.dto.CreateProjectRequest;
+import com.chj.aigc.web.dto.CreatePaymentOrderRequest;
 import com.chj.aigc.web.dto.CreateBrandRequest;
 import com.chj.aigc.web.dto.CreateClientRequest;
 import com.chj.aigc.web.dto.CreateTenantMemberRequest;
@@ -71,12 +72,38 @@ public class TenantApiController {
     public ApiResponse<Map<String, Object>> recharge(@RequestBody RechargeRequest request, HttpServletRequest httpRequest) {
         requireAnyRole(httpRequest, "platform_super_admin", "tenant_owner");
         return ApiResponse.success(tenantBillingService.recharge(
-                resolveTenantId(httpRequest),
+                resolveRechargeTenantId(request, httpRequest),
                 request.entryId(),
                 Money.of(request.amount()),
                 request.description(),
                 request.referenceId()
         ));
+    }
+
+    @GetMapping("/wallet/payment-orders")
+    public ApiResponse<List<Map<String, Object>>> paymentOrders(HttpServletRequest httpRequest) {
+        return ApiResponse.success(tenantBillingService.paymentOrders(resolveTenantId(httpRequest)));
+    }
+
+    @PostMapping("/wallet/payment-orders/wechat")
+    public ApiResponse<Map<String, Object>> createWeChatPaymentOrder(
+            @RequestBody CreatePaymentOrderRequest request,
+            HttpServletRequest httpRequest
+    ) {
+        requireAnyRole(httpRequest, "platform_super_admin", "tenant_owner");
+        return ApiResponse.success(tenantBillingService.createMockWeChatPaymentOrder(
+                resolveRechargeTenantId(new RechargeRequest(request.orderId(), request.tenantId(), request.amount(), request.description(), request.referenceId()), httpRequest),
+                request.orderId(),
+                Money.of(request.amount()),
+                request.description(),
+                request.referenceId()
+        ));
+    }
+
+    @PostMapping("/wallet/payment-orders/{orderId}/mock-paid")
+    public ApiResponse<Map<String, Object>> mockPayOrder(@PathVariable String orderId, HttpServletRequest httpRequest) {
+        requireAnyRole(httpRequest, "platform_super_admin", "tenant_owner");
+        return ApiResponse.success(tenantBillingService.markPaymentOrderPaid(orderId));
     }
 
     @GetMapping("/quotas")
@@ -239,6 +266,18 @@ public class TenantApiController {
             return session.tenantId();
         }
         return "tenant-demo";
+    }
+
+    /**
+     * 超管可显式指定目标租户，租户负责人仍固定作用于自己的租户。
+     */
+    private String resolveRechargeTenantId(RechargeRequest request, HttpServletRequest httpRequest) {
+        AuthSession session = currentSession(httpRequest);
+        if (session != null && "platform_super_admin".equals(session.roleKey())
+                && request.tenantId() != null && !request.tenantId().isBlank()) {
+            return request.tenantId();
+        }
+        return resolveTenantId(httpRequest);
     }
 
     private Map<String, Object> serializeUser(AuthUser user) {

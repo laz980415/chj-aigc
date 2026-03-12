@@ -10,10 +10,14 @@ It is also aligned to Anthropic's official quickstart repository:
 For this project direction:
 - Java is the primary language for business backend services.
 - Python is used for model-provider integration and AI orchestration.
+- Java backend is moving to a Spring Cloud Alibaba microservice architecture with Nacos discovery.
 
 ## Backend Status
 
-The repository now includes a runnable Spring Boot backend shell in `backend-java`.
+The repository now includes:
+
+- `backend-java`: platform management service
+- `backend-tenant-service`: tenant workspace microservice skeleton
 
 Current API shell endpoints:
 - `GET /api/health`
@@ -26,25 +30,39 @@ Current API shell endpoints:
 - `GET /api/tenant/brands/{clientId}`
 - `GET /api/tenant/assets`
 
-## Run Backend
+## Run Java Services
 
 Requirements:
 - JDK `21`
 - Maven using local repository `E:\repository`
+- Optional Nacos server for service discovery
 
 Optional environment variables:
 - `APP_DB_URL`
 - `APP_DB_USERNAME`
 - `APP_DB_PASSWORD`
+- `NACOS_DISCOVERY_ENABLED`
+- `NACOS_SERVER_ADDR`
+- `NACOS_NAMESPACE`
+- `NACOS_GROUP`
 
-Example PowerShell session:
+Run the platform service:
 
 ```powershell
 $env:APP_DB_URL="jdbc:postgresql://36.150.108.207:54312/chj-aigc"
 $env:APP_DB_USERNAME="postgres"
 $env:APP_DB_PASSWORD="your-password"
+$env:NACOS_DISCOVERY_ENABLED="false"
 Set-Location backend-java
-mvn spring-boot:run
+mvn spring-boot:run "-Dmaven.repo.local=E:\repository"
+```
+
+Run the tenant microservice skeleton:
+
+```powershell
+$env:NACOS_DISCOVERY_ENABLED="false"
+Set-Location backend-tenant-service
+mvn spring-boot:run "-Dmaven.repo.local=E:\repository"
 ```
 
 After startup, open:
@@ -53,13 +71,17 @@ After startup, open:
 http://127.0.0.1:8080/api/health
 http://127.0.0.1:8080/api/admin/summary
 http://127.0.0.1:8080/api/tenant/wallet
+http://127.0.0.1:8082/api/health
 ```
 
-Run backend tests with:
+Run Java tests with:
 
 ```powershell
 Set-Location backend-java
-mvn test
+mvn test "-Dmaven.repo.local=E:\repository"
+
+Set-Location ..\backend-tenant-service
+mvn test "-Dmaven.repo.local=E:\repository"
 ```
 
 ## Run Frontend
@@ -78,7 +100,15 @@ Open:
 http://127.0.0.1:5173
 ```
 
-The Vite dev server proxies `/api` requests to the Spring Boot backend at `http://127.0.0.1:8080`.
+The Vite dev server currently proxies `/api` requests to the platform service at `http://127.0.0.1:8080`.
+
+## Microservice Notes
+
+The detailed migration notes are documented in `docs/microservice-architecture.md`.
+Recommended next databases on the same PostgreSQL server are:
+
+- `chj-aigc-platform`
+- `chj-aigc-tenant`
 
 The core idea is simple:
 

@@ -24,6 +24,54 @@
         on conflict (id) do nothing
     </insert>
 
+    <select id="listPaymentOrders" resultType="map">
+        select
+            id as id,
+            tenant_id as tenantId,
+            channel as channel,
+            status as status,
+            amount as amount,
+            description as description,
+            reference_id as referenceId,
+            qr_code as qrCode,
+            created_at as createdAt,
+            paid_at as paidAt
+        from tenant_payment_orders
+        where tenant_id = #{tenantId}
+        order by created_at desc
+    </select>
+
+    <select id="findPaymentOrder" resultType="map">
+        select
+            id as id,
+            tenant_id as tenantId,
+            channel as channel,
+            status as status,
+            amount as amount,
+            description as description,
+            reference_id as referenceId,
+            qr_code as qrCode,
+            created_at as createdAt,
+            paid_at as paidAt
+        from tenant_payment_orders
+        where id = #{orderId}
+    </select>
+
+    <insert id="upsertPaymentOrder" parameterType="map">
+        insert into tenant_payment_orders (id, tenant_id, channel, status, amount, description, reference_id, qr_code, created_at, paid_at)
+        values (#{id}, #{tenantId}, #{channel}, #{status}, #{amount}, #{description}, #{referenceId}, #{qrCode}, #{createdAt}, #{paidAt})
+        on conflict (id) do update set
+            tenant_id = excluded.tenant_id,
+            channel = excluded.channel,
+            status = excluded.status,
+            amount = excluded.amount,
+            description = excluded.description,
+            reference_id = excluded.reference_id,
+            qr_code = excluded.qr_code,
+            created_at = excluded.created_at,
+            paid_at = excluded.paid_at
+    </insert>
+
     <select id="listQuotaAllocations" resultType="map">
         select
             id as id,

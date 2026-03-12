@@ -95,6 +95,20 @@ type TenantDetailPayload = {
   members: UserPayload[];
   rules: RulePayload[];
   ledgerEntries: LedgerEntryPayload[];
+  paymentOrders: PaymentOrderPayload[];
+};
+
+type PaymentOrderPayload = {
+  id: string;
+  tenantId: string;
+  channel: string;
+  status: string;
+  amount: string;
+  description: string;
+  referenceId: string;
+  qrCode: string;
+  createdAt: string;
+  paidAt: string | null;
 };
 
 type DbInfoPayload = {
@@ -155,6 +169,7 @@ const rules = ref<RulePayload[]>([]);
 const tenants = ref<TenantOverviewPayload[]>([]);
 const selectedTenantId = ref("tenant-demo");
 const tenantDetail = ref<TenantDetailPayload | null>(null);
+const paymentOrders = ref<PaymentOrderPayload[]>([]);
 const wallet = ref<WalletPayload>({ tenantId: "tenant-demo", balance: "0", ledgerCount: 0 });
 const quotas = ref<QuotaPayload>({ projectImageRemaining: "0", userTokenRemaining: "0" });
 const quotaAllocations = ref<QuotaAllocationPayload[]>([]);
@@ -193,7 +208,8 @@ const userForm = reactive({
 });
 
 const rechargeForm = reactive({
-  entryId: "recharge-ui-1",
+  orderId: "pay-ui-1",
+  tenantId: "tenant-demo",
   amount: "100.00",
   description: "后台人工充值",
   referenceId: "dashboard",
@@ -357,6 +373,7 @@ async function loadDashboard() {
   rules.value = [];
   tenants.value = [];
   tenantDetail.value = null;
+  paymentOrders.value = [];
   wallet.value = { tenantId: "tenant-demo", balance: "0", ledgerCount: 0 };
   quotas.value = { projectImageRemaining: "0", userTokenRemaining: "0" };
   quotaAllocations.value = [];
@@ -397,10 +414,11 @@ async function loadDashboard() {
   }
 
   if (canViewTenantWorkspace.value) {
-    const [walletPayload, quotaPayload, quotaAllocationPayload, projectPayload, memberPayload, clientPayload, brandPayload, assetPayload] = await Promise.all([
+    const [walletPayload, quotaPayload, quotaAllocationPayload, paymentOrderPayload, projectPayload, memberPayload, clientPayload, brandPayload, assetPayload] = await Promise.all([
       fetchJson<WalletPayload>("/api/tenant/wallet"),
       fetchJson<QuotaPayload>("/api/tenant/quotas"),
       fetchJson<QuotaAllocationPayload[]>("/api/tenant/quota-allocations"),
+      fetchJson<PaymentOrderPayload[]>("/api/tenant/wallet/payment-orders"),
       fetchJson<ProjectPayload[]>("/api/tenant/projects"),
       fetchJson<UserPayload[]>("/api/tenant/members"),
       fetchJson<ClientPayload[]>("/api/tenant/clients"),
@@ -410,6 +428,7 @@ async function loadDashboard() {
     wallet.value = walletPayload;
     quotas.value = quotaPayload;
     quotaAllocations.value = quotaAllocationPayload;
+    paymentOrders.value = paymentOrderPayload;
     projects.value = projectPayload;
     members.value = memberPayload;
     clients.value = clientPayload;
@@ -426,6 +445,9 @@ async function loadDashboard() {
 // 平台超管加载单个租户详情，查看成员、模型策略和钱包流水。
 async function loadTenantDetail(tenantId: string) {
   selectedTenantId.value = tenantId;
+  rechargeForm.tenantId = tenantId;
+  ruleForm.scopeType = "tenant";
+  ruleForm.scopeValue = tenantId;
   tenantDetail.value = await fetchJson<TenantDetailPayload>(`/api/admin/tenants/${tenantId}`);
 }
 
@@ -530,6 +552,9 @@ function quotaScopeTypeLabel(scopeType: string) {
 async function createRule() {
   success.value = "";
   error.value = "";
+  if (isPlatformAdmin.value && ruleForm.scopeType === "tenant") {
+    ruleForm.scopeValue = selectedTenantId.value;
+  }
   await fetchJson<RulePayload>("/api/admin/model-access-rules", {
     method: "POST",
     headers: {
@@ -539,21 +564,47 @@ async function createRule() {
   });
   success.value = `规则 ${ruleForm.ruleId} 已创建`;
   await loadDashboard();
+  if (isPlatformAdmin.value) {
+    await loadTenantDetail(selectedTenantId.value);
+  }
 }
 
-// 给租户钱包增加余额。
+// 创建微信支付订单，等待模拟支付成功后再到账。
 async function rechargeWallet() {
   success.value = "";
   error.value = "";
-  await fetchJson<WalletPayload>("/api/tenant/wallet/recharge", {
+  if (isPlatformAdmin.value) {
+    rechargeForm.tenantId = selectedTenantId.value;
+  }
+  await fetchJson<PaymentOrderPayload>("/api/tenant/wallet/payment-orders/wechat", {
     method: "POST",
     headers: {
       "Content-Type": "application/json",
     },
     body: JSON.stringify(rechargeForm),
   });
-  success.value = `钱包已充值 ${rechargeForm.amount}`;
+  success.value = `微信支付订单 ${rechargeForm.orderId} 已创建`;
   await loadDashboard();
+  if (isPlatformAdmin.value) {
+    await loadTenantDetail(selectedTenantId.value);
+  }
+}
+
+// 模拟微信支付回调成功，把订单状态改为已支付并写入钱包流水。
+async function mockPayOrder(orderId: string) {
+  success.value = "";
+  error.value = "";
+  await fetchJson<PaymentOrderPayload>(`/api/tenant/wallet/payment-orders/${orderId}/mock-paid`, {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json",
+    },
+  });
+  success.value = `支付订单 ${orderId} 已模拟支付成功`;
+  await loadDashboard();
+  if (isPlatformAdmin.value) {
+    await loadTenantDetail(selectedTenantId.value);
+  }
 }
 
 // 保存项目或成员额度分配。
@@ -996,28 +1047,38 @@ onBeforeUnmount(() => {
               <section class="panel detail-panel">
                 <div class="panel-head">
                   <div>
-                    <p class="panel-label">租户流水</p>
-                    <h3>充值与扣费记录</h3>
+                    <p class="panel-label">支付订单</p>
+                    <h3>微信支付模拟订单</h3>
                   </div>
                 </div>
                 <div class="table-wrap">
                   <table>
                     <thead>
                       <tr>
-                        <th>流水 ID</th>
-                        <th>类型</th>
+                        <th>订单 ID</th>
+                        <th>状态</th>
                         <th>金额</th>
                         <th>说明</th>
-                        <th>引用</th>
+                        <th>操作</th>
                       </tr>
                     </thead>
                     <tbody>
-                      <tr v-for="entry in tenantDetail.ledgerEntries" :key="entry.id">
-                        <td>{{ entry.id }}</td>
-                        <td>{{ entry.entryType }}</td>
-                        <td>{{ entry.amount }}</td>
-                        <td>{{ entry.description }}</td>
-                        <td>{{ entry.referenceId }}</td>
+                      <tr v-for="order in tenantDetail.paymentOrders" :key="order.id">
+                        <td>{{ order.id }}</td>
+                        <td>{{ order.status }}</td>
+                        <td>{{ order.amount }}</td>
+                        <td>{{ order.description }}</td>
+                        <td>
+                          <button
+                            v-if="order.status === 'PENDING'"
+                            class="tiny-button"
+                            type="button"
+                            @click="runAction(() => mockPayOrder(order.id))"
+                          >
+                            模拟支付成功
+                          </button>
+                          <span v-else>已到账</span>
+                        </td>
                       </tr>
                     </tbody>
                   </table>
@@ -1129,12 +1190,12 @@ onBeforeUnmount(() => {
         </div>
         <div class="form-grid split-forms">
           <form v-if="canRechargeTenant" class="form-stack" @submit.prevent="runAction(rechargeWallet)">
-            <h3>钱包充值</h3>
-            <input v-model="rechargeForm.entryId" placeholder="流水 ID" required>
+            <h3>微信支付下单</h3>
+            <input v-model="rechargeForm.orderId" placeholder="支付订单 ID" required>
             <input v-model="rechargeForm.amount" placeholder="充值金额" required>
             <input v-model="rechargeForm.description" placeholder="说明" required>
             <input v-model="rechargeForm.referenceId" placeholder="引用 ID" required>
-            <button class="action-button" type="submit">充值</button>
+            <button class="action-button" type="submit">创建微信支付订单</button>
           </form>
 
           <form v-if="canManageTenantWorkspace" class="form-stack" @submit.prevent="runAction(saveQuota)">
@@ -1189,6 +1250,38 @@ onBeforeUnmount(() => {
                 <td>{{ allocation.dimension }}</td>
                 <td>{{ allocation.limit }}</td>
                 <td>{{ allocation.used }}</td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+        <div class="table-wrap" v-if="paymentOrders.length > 0 && !isPlatformAdmin">
+          <table>
+            <thead>
+              <tr>
+                <th>支付订单</th>
+                <th>状态</th>
+                <th>金额</th>
+                <th>说明</th>
+                <th>操作</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr v-for="order in paymentOrders" :key="order.id">
+                <td>{{ order.id }}</td>
+                <td>{{ order.status }}</td>
+                <td>{{ order.amount }}</td>
+                <td>{{ order.description }}</td>
+                <td>
+                  <button
+                    v-if="order.status === 'PENDING' && canRechargeTenant"
+                    class="tiny-button"
+                    type="button"
+                    @click="runAction(() => mockPayOrder(order.id))"
+                  >
+                    模拟支付成功
+                  </button>
+                  <span v-else>已到账</span>
+                </td>
               </tr>
             </tbody>
           </table>

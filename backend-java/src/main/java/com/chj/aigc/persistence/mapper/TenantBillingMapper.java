@@ -12,6 +12,12 @@ public interface TenantBillingMapper {
 
     void upsertLedgerEntry(Map<String, Object> entry);
 
+    List<Map<String, Object>> listPaymentOrders(@Param("tenantId") String tenantId);
+
+    Map<String, Object> findPaymentOrder(@Param("orderId") String orderId);
+
+    void upsertPaymentOrder(Map<String, Object> order);
+
     List<Map<String, Object>> listQuotaAllocations(@Param("tenantId") String tenantId);
 
     void upsertQuotaAllocation(Map<String, Object> allocation);

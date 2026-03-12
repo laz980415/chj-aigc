@@ -6,6 +6,7 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import com.chj.aigc.Application;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import java.math.BigDecimal;
 import java.util.List;
 import java.util.Map;
 import org.junit.jupiter.api.Test;
@@ -116,6 +117,14 @@ class ApplicationSmokeTest {
     void adminAndTenantMutationEndpointsWork() throws Exception {
         String adminToken = loginAsAdmin();
 
+        MvcResult beforeWalletResult = mockMvc.perform(get("/api/tenant/wallet")
+                        .header("X-Auth-Token", adminToken))
+                .andExpect(status().isOk())
+                .andReturn();
+        Map<String, Object> beforeWallet = readData(beforeWalletResult, new TypeReference<>() {
+        });
+        BigDecimal beforeBalance = new BigDecimal(String.valueOf(beforeWallet.get("balance")));
+
         String createRuleBody = """
                 {
                   "ruleId": "rule-created-1",
@@ -134,24 +143,36 @@ class ApplicationSmokeTest {
                         .content(createRuleBody))
                 .andExpect(status().isOk());
 
-        String rechargeBody = """
+        String createPaymentBody = """
                 {
-                  "entryId": "recharge-test-1",
+                  "orderId": "wechat-order-admin-1",
+                  "tenantId": "tenant-demo",
                   "amount": "250.00",
                   "description": "top up",
-                  "referenceId": "manual-topup"
+                  "referenceId": "mock-wechat-topup"
                 }
                 """;
 
-        MvcResult walletResult = mockMvc.perform(post("/api/tenant/wallet/recharge")
+        mockMvc.perform(post("/api/tenant/wallet/payment-orders/wechat")
                         .header("X-Auth-Token", adminToken)
                         .contentType("application/json")
-                        .content(rechargeBody))
+                        .content(createPaymentBody))
+                .andExpect(status().isOk())
+                .andReturn();
+
+        mockMvc.perform(post("/api/tenant/wallet/payment-orders/wechat-order-admin-1/mock-paid")
+                        .header("X-Auth-Token", adminToken)
+                        .contentType("application/json"))
+                .andExpect(status().isOk());
+
+        MvcResult walletResult = mockMvc.perform(get("/api/tenant/wallet")
+                        .header("X-Auth-Token", adminToken))
                 .andExpect(status().isOk())
                 .andReturn();
         Map<String, Object> wallet = readData(walletResult, new TypeReference<>() {
         });
-        assertEquals("1250.0000", wallet.get("balance"));
+        BigDecimal afterBalance = new BigDecimal(String.valueOf(wallet.get("balance")));
+        assertEquals(new BigDecimal("250.0000"), afterBalance.subtract(beforeBalance));
 
         String tenantToken = loginAsTenantOwner();
 
@@ -175,6 +196,40 @@ class ApplicationSmokeTest {
         Map<String, Object> quotas = readData(quotaResult, new TypeReference<>() {
         });
         assertEquals("48800.0", String.valueOf(quotas.get("userTokenRemaining")));
+    }
+
+    @Test
+    void canCreateAndMockPayWeChatOrder() throws Exception {
+        String adminToken = loginAsAdmin();
+
+        String createPaymentBody = """
+                {
+                  "orderId": "wechat-order-1",
+                  "tenantId": "tenant-demo",
+                  "amount": "88.00",
+                  "description": "租户微信充值",
+                  "referenceId": "wx-demo-1"
+                }
+                """;
+
+        MvcResult orderResult = mockMvc.perform(post("/api/tenant/wallet/payment-orders/wechat")
+                        .header("X-Auth-Token", adminToken)
+                        .contentType("application/json")
+                        .content(createPaymentBody))
+                .andExpect(status().isOk())
+                .andReturn();
+        Map<String, Object> order = readData(orderResult, new TypeReference<>() {
+        });
+        assertEquals("PENDING", order.get("status"));
+
+        MvcResult paidResult = mockMvc.perform(post("/api/tenant/wallet/payment-orders/wechat-order-1/mock-paid")
+                        .header("X-Auth-Token", adminToken)
+                        .contentType("application/json"))
+                .andExpect(status().isOk())
+                .andReturn();
+        Map<String, Object> paidOrder = readData(paidResult, new TypeReference<>() {
+        });
+        assertEquals("PAID", paidOrder.get("status"));
     }
 
     @Test
@@ -252,6 +307,7 @@ class ApplicationSmokeTest {
         assertTrue(detail.containsKey("members"));
         assertTrue(detail.containsKey("rules"));
         assertTrue(detail.containsKey("ledgerEntries"));
+        assertTrue(detail.containsKey("paymentOrders"));
     }
 
     @Test

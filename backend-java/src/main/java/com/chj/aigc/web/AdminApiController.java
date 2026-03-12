@@ -116,6 +116,7 @@ public class AdminApiController {
                 .filter(rule -> tenantId.equals(rule.scope().value()))
                 .toList());
         payload.put("ledgerEntries", tenantBillingService.ledgerEntries(tenantId));
+        payload.put("paymentOrders", tenantBillingService.paymentOrders(tenantId));
         return ApiResponse.success(payload);
     }
 

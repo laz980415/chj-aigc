@@ -49,6 +49,64 @@ public final class JdbcTenantBillingStore implements TenantBillingStore {
     }
 
     @Override
+    public List<PaymentOrder> listPaymentOrders(String tenantId) {
+        return jdbcTemplate.query(
+                """
+                select id, tenant_id, channel, status, amount, description, reference_id, qr_code, created_at, paid_at
+                from tenant_payment_orders
+                where tenant_id = ?
+                order by created_at desc
+                """,
+                this::mapPaymentOrder,
+                tenantId
+        );
+    }
+
+    @Override
+    public PaymentOrder findPaymentOrder(String orderId) {
+        List<PaymentOrder> orders = jdbcTemplate.query(
+                """
+                select id, tenant_id, channel, status, amount, description, reference_id, qr_code, created_at, paid_at
+                from tenant_payment_orders
+                where id = ?
+                """,
+                this::mapPaymentOrder,
+                orderId
+        );
+        return orders.isEmpty() ? null : orders.getFirst();
+    }
+
+    @Override
+    public void savePaymentOrder(PaymentOrder order) {
+        jdbcTemplate.update(
+                """
+                insert into tenant_payment_orders (id, tenant_id, channel, status, amount, description, reference_id, qr_code, created_at, paid_at)
+                values (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+                on conflict (id) do update set
+                    tenant_id = excluded.tenant_id,
+                    channel = excluded.channel,
+                    status = excluded.status,
+                    amount = excluded.amount,
+                    description = excluded.description,
+                    reference_id = excluded.reference_id,
+                    qr_code = excluded.qr_code,
+                    created_at = excluded.created_at,
+                    paid_at = excluded.paid_at
+                """,
+                order.id(),
+                order.tenantId(),
+                order.channel().name(),
+                order.status().name(),
+                order.amount().amount(),
+                order.description(),
+                order.referenceId(),
+                order.qrCode(),
+                Timestamp.from(order.createdAt()),
+                order.paidAt() == null ? null : Timestamp.from(order.paidAt())
+        );
+    }
+
+    @Override
     public List<QuotaAllocation> listQuotaAllocations(String tenantId) {
         return jdbcTemplate.query(
                 """
@@ -109,6 +167,22 @@ public final class JdbcTenantBillingStore implements TenantBillingStore {
                 QuotaDimension.valueOf(resultSet.getString("dimension")),
                 resultSet.getBigDecimal("limit_value"),
                 resultSet.getBigDecimal("used_value")
+        );
+    }
+
+    private PaymentOrder mapPaymentOrder(ResultSet resultSet, int rowNum) throws SQLException {
+        Timestamp paidAt = resultSet.getTimestamp("paid_at");
+        return new PaymentOrder(
+                resultSet.getString("id"),
+                resultSet.getString("tenant_id"),
+                PaymentChannel.valueOf(resultSet.getString("channel")),
+                PaymentOrderStatus.valueOf(resultSet.getString("status")),
+                new Money(resultSet.getBigDecimal("amount")),
+                resultSet.getString("description"),
+                resultSet.getString("reference_id"),
+                resultSet.getString("qr_code"),
+                resultSet.getTimestamp("created_at").toInstant(),
+                paidAt == null ? null : paidAt.toInstant()
         );
     }
 }

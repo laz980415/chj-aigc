@@ -327,6 +327,73 @@
           "note": "Expanded the V1 roadmap into a concrete delivery plan with milestone slices, demo scenarios, release recommendations, and an explicit next-phase shift from domain modeling to Spring Boot APIs and a first visible admin UI."
         }
       ]
+    },
+    {
+      "id": "feature-013",
+      "title": "Replace mock WeChat recharge with real payment integration",
+      "description": "The current tenant recharge flow uses a mock WeChat payment order and simulated success callback. Replace it with real WeChat Pay configuration, order signing, callback verification, and production-grade payment state handling.",
+      "acceptance_criteria": [
+        "Payment configuration can be injected from application config or environment variables",
+        "WeChat order creation uses real signed requests instead of mock QR payloads",
+        "Asynchronous callback verification updates order status and wallet recharge idempotently"
+      ],
+      "depends_on": [
+        "feature-005",
+        "feature-012"
+      ],
+      "state": "pending",
+      "created_at": "2026-03-12T07:15:00+00:00",
+      "updated_at": "2026-03-12T07:15:00+00:00",
+      "session_notes": [
+        {
+          "at": "2026-03-12T07:15:00+00:00",
+          "note": "Current recharge flow is implemented with mock WeChat payment orders and a simulated payment-success action. Replace this with real WeChat Pay parameters, callback verification, and idempotent payment settlement in a later delivery slice."
+        }
+      ]
+    },
+    {
+      "id": "feature-014",
+      "title": "Split Java backend into Spring Cloud Alibaba microservices",
+      "description": "Replace the current single Spring Boot backend with Spring Cloud Alibaba services, Nacos service discovery, and clear platform-versus-tenant service boundaries.",
+      "acceptance_criteria": [
+        "Platform management service and tenant workspace service run as separate Spring Boot applications",
+        "Both services use Spring Cloud Alibaba Nacos discovery configuration",
+        "Database split strategy is documented as same PostgreSQL server with different databases"
+      ],
+      "depends_on": [
+        "feature-012"
+      ],
+      "state": "in_progress",
+      "created_at": "2026-03-12T07:22:00+00:00",
+      "updated_at": "2026-03-12T07:22:00+00:00",
+      "session_notes": [
+        {
+          "at": "2026-03-12T07:22:00+00:00",
+          "note": "Started migrating the Java backend from a single Spring Boot application to a Spring Cloud Alibaba microservice layout. Platform management stays in backend-java first, while a dedicated backend-tenant-service is introduced and both services are prepared for Nacos registration and discovery."
+        }
+      ]
+    },
+    {
+      "id": "feature-015",
+      "title": "Migrate tenant workspace APIs from platform service to tenant service",
+      "description": "Move tenant-side project, member, asset, wallet, and quota APIs into the dedicated tenant workspace microservice and then place an API gateway in front of both Java services.",
+      "acceptance_criteria": [
+        "Tenant workspace APIs are no longer served by the platform management service",
+        "Frontend can call tenant APIs through a single routed entry after gateway introduction",
+        "Service-to-service contracts between platform and tenant services are documented"
+      ],
+      "depends_on": [
+        "feature-014"
+      ],
+      "state": "pending",
+      "created_at": "2026-03-12T07:22:00+00:00",
+      "updated_at": "2026-03-12T07:22:00+00:00",
+      "session_notes": [
+        {
+          "at": "2026-03-12T07:22:00+00:00",
+          "note": "The current tenant APIs still live in backend-java for continuity. They need to be moved into backend-tenant-service in a follow-up delivery slice, with a gateway added afterward."
+        }
+      ]
     }
   ]
 }

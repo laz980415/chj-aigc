@@ -6,6 +6,7 @@ import java.util.Objects;
 
 public final class InMemoryTenantBillingStore implements TenantBillingStore {
     private final List<WalletLedgerEntry> ledgerEntries = new ArrayList<>();
+    private final List<PaymentOrder> paymentOrders = new ArrayList<>();
     private final List<QuotaAllocation> quotaAllocations = new ArrayList<>();
 
     @Override
@@ -18,6 +19,27 @@ public final class InMemoryTenantBillingStore implements TenantBillingStore {
     @Override
     public void saveLedgerEntry(WalletLedgerEntry entry) {
         ledgerEntries.add(Objects.requireNonNull(entry, "entry"));
+    }
+
+    @Override
+    public List<PaymentOrder> listPaymentOrders(String tenantId) {
+        return paymentOrders.stream()
+                .filter(order -> order.tenantId().equals(tenantId))
+                .toList();
+    }
+
+    @Override
+    public PaymentOrder findPaymentOrder(String orderId) {
+        return paymentOrders.stream()
+                .filter(order -> order.id().equals(orderId))
+                .findFirst()
+                .orElse(null);
+    }
+
+    @Override
+    public void savePaymentOrder(PaymentOrder order) {
+        paymentOrders.removeIf(existing -> existing.id().equals(order.id()));
+        paymentOrders.add(Objects.requireNonNull(order, "order"));
     }
 
     @Override
