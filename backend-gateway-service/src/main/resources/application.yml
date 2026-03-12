@@ -1,0 +1,27 @@
+server:
+  port: 8081
+
+spring:
+  application:
+    name: chj-aigc-gateway-service
+  cloud:
+    nacos:
+      discovery:
+        enabled: ${NACOS_DISCOVERY_ENABLED:false}
+        server-addr: ${NACOS_SERVER_ADDR:127.0.0.1:8848}
+        namespace: ${NACOS_NAMESPACE:public}
+        group: ${NACOS_GROUP:DEFAULT_GROUP}
+    gateway:
+      routes:
+        - id: platform-service
+          uri: ${PLATFORM_SERVICE_URI:http://127.0.0.1:8080}
+          predicates:
+            - Path=/platform-api/**
+          filters:
+            - StripPrefix=1
+        - id: tenant-service
+          uri: ${TENANT_SERVICE_URI:http://127.0.0.1:8082}
+          predicates:
+            - Path=/tenant-api/**
+          filters:
+            - StripPrefix=1

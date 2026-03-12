@@ -7,6 +7,7 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 import com.chj.aigc.Application;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import java.math.BigDecimal;
+import java.util.UUID;
 import java.util.List;
 import java.util.Map;
 import org.junit.jupiter.api.Test;
@@ -143,15 +144,16 @@ class ApplicationSmokeTest {
                         .content(createRuleBody))
                 .andExpect(status().isOk());
 
+        String orderId = "wechat-order-admin-" + UUID.randomUUID();
         String createPaymentBody = """
                 {
-                  "orderId": "wechat-order-admin-1",
+                  "orderId": "%s",
                   "tenantId": "tenant-demo",
                   "amount": "250.00",
                   "description": "top up",
                   "referenceId": "mock-wechat-topup"
                 }
-                """;
+                """.formatted(orderId);
 
         mockMvc.perform(post("/api/tenant/wallet/payment-orders/wechat")
                         .header("X-Auth-Token", adminToken)
@@ -160,7 +162,7 @@ class ApplicationSmokeTest {
                 .andExpect(status().isOk())
                 .andReturn();
 
-        mockMvc.perform(post("/api/tenant/wallet/payment-orders/wechat-order-admin-1/mock-paid")
+        mockMvc.perform(post("/api/tenant/wallet/payment-orders/" + orderId + "/mock-paid")
                         .header("X-Auth-Token", adminToken)
                         .contentType("application/json"))
                 .andExpect(status().isOk());

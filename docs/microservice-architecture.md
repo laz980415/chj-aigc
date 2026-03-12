@@ -12,6 +12,9 @@
 - `backend-tenant-service`
   - 租户工作台服务
   - 负责项目、成员、素材、客户、品牌、额度等租户内部能力
+- `backend-gateway-service`
+  - 网关服务
+  - 负责统一接入平台服务和租户服务，并为前端提供单入口
 - `platform_core`
   - Python 模型编排层
   - 负责模型路由、品牌约束、生成任务和结算编排
@@ -24,6 +27,7 @@
 
 - 平台管理服务：`chj-aigc-platform-service`
 - 租户工作台服务：`chj-aigc-tenant-service`
+- 网关服务：`chj-aigc-gateway-service`
 
 公共环境变量：
 
@@ -92,3 +96,18 @@
 2. 再把素材、客户、品牌迁过去
 3. 然后补一个 API 网关服务统一前端入口
 4. 最后把前端 `/api` 代理改成只指向网关
+
+## 网关当前路由约定
+
+为了先把网关服务接起来，当前使用显式路由前缀：
+
+- `/platform-api/**` -> `backend-java`
+- `/tenant-api/**` -> `backend-tenant-service`
+
+默认本地直连地址：
+
+- 平台服务：`http://127.0.0.1:8080`
+- 网关服务：`http://127.0.0.1:8081`
+- 租户服务：`http://127.0.0.1:8082`
+
+当前网关配置既支持本地直连 URI，也为后续改成 `lb://` 服务发现路由预留了位置。

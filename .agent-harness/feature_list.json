@@ -370,6 +370,10 @@
         {
           "at": "2026-03-12T07:22:00+00:00",
           "note": "Started migrating the Java backend from a single Spring Boot application to a Spring Cloud Alibaba microservice layout. Platform management stays in backend-java first, while a dedicated backend-tenant-service is introduced and both services are prepared for Nacos registration and discovery."
+        },
+        {
+          "at": "2026-03-12T07:52:00+00:00",
+          "note": "Added backend-gateway-service as the unified Spring Cloud Gateway entry service and prepared explicit platform and tenant route prefixes so the frontend can later switch to a single gateway entry."
         }
       ]
     },

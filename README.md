@@ -18,6 +18,7 @@ The repository now includes:
 
 - `backend-java`: platform management service
 - `backend-tenant-service`: tenant workspace microservice skeleton
+- `backend-gateway-service`: Spring Cloud Gateway entry service
 
 Current API shell endpoints:
 - `GET /api/health`
@@ -65,10 +66,19 @@ Set-Location backend-tenant-service
 mvn spring-boot:run "-Dmaven.repo.local=E:\repository"
 ```
 
+Run the gateway service:
+
+```powershell
+$env:NACOS_DISCOVERY_ENABLED="false"
+Set-Location backend-gateway-service
+mvn spring-boot:run "-Dmaven.repo.local=E:\repository"
+```
+
 After startup, open:
 
 ```text
 http://127.0.0.1:8080/api/health
+http://127.0.0.1:8081/gateway/health
 http://127.0.0.1:8080/api/admin/summary
 http://127.0.0.1:8080/api/tenant/wallet
 http://127.0.0.1:8082/api/health
@@ -81,6 +91,9 @@ Set-Location backend-java
 mvn test "-Dmaven.repo.local=E:\repository"
 
 Set-Location ..\backend-tenant-service
+mvn test "-Dmaven.repo.local=E:\repository"
+
+Set-Location ..\backend-gateway-service
 mvn test "-Dmaven.repo.local=E:\repository"
 ```
 
