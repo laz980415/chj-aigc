@@ -4,8 +4,8 @@ Project: AIGC Advertising SaaS Platform
 
 ## Status Snapshot
 
-- Pending: 7
-- In progress: 0
+- Pending: 6
+- In progress: 1
 - Blocked: 0
 - Done: 5
 
@@ -13,7 +13,7 @@ Project: AIGC Advertising SaaS Platform
 
 - ID: feature-006
 - Title: Implement super-admin model access control
-- State: pending
+- State: in_progress
 - Description: Allow super admins through Java admin APIs to control which tenants, roles, or projects can use which platform models.
 - Depends on: feature-002, feature-003
 - Acceptance criteria:
