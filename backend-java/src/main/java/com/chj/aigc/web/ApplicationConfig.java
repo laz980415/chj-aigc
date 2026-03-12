@@ -17,6 +17,10 @@ import com.chj.aigc.asset.AssetCatalogStore;
 import com.chj.aigc.asset.InMemoryAssetCatalogStore;
 import com.chj.aigc.asset.JdbcAssetCatalogStore;
 import com.chj.aigc.asset.TenantAssetCatalogService;
+import com.chj.aigc.tenant.InMemoryTenantProjectStore;
+import com.chj.aigc.tenant.JdbcTenantProjectStore;
+import com.chj.aigc.tenant.TenantProjectStore;
+import com.chj.aigc.tenant.TenantWorkspaceService;
 import org.springframework.beans.factory.ObjectProvider;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
@@ -81,6 +85,20 @@ public class ApplicationConfig {
     @Bean
     public TenantAssetCatalogService tenantAssetCatalogService(AssetCatalogStore assetCatalogStore) {
         return new TenantAssetCatalogService(assetCatalogStore);
+    }
+
+    @Bean
+    public TenantProjectStore tenantProjectStore(ObjectProvider<JdbcTemplate> jdbcTemplateProvider) {
+        JdbcTemplate jdbcTemplate = jdbcTemplateProvider.getIfAvailable();
+        if (jdbcTemplate != null) {
+            return new JdbcTenantProjectStore(jdbcTemplate);
+        }
+        return new InMemoryTenantProjectStore();
+    }
+
+    @Bean
+    public TenantWorkspaceService tenantWorkspaceService(TenantProjectStore tenantProjectStore, AuthService authService) {
+        return new TenantWorkspaceService(tenantProjectStore, authService);
     }
 
     @Bean

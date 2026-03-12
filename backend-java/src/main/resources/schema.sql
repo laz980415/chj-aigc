@@ -62,6 +62,13 @@ create table if not exists tenant_quota_allocations (
     used_value numeric(18, 4) not null
 );
 
+create table if not exists tenant_projects (
+    id varchar(128) primary key,
+    tenant_id varchar(128) not null,
+    name varchar(255) not null,
+    active boolean not null
+);
+
 create table if not exists tenant_clients (
     id varchar(128) primary key,
     tenant_id varchar(128) not null,

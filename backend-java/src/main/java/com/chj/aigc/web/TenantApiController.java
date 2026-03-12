@@ -12,6 +12,9 @@ import com.chj.aigc.billing.QuotaDimension;
 import com.chj.aigc.billing.QuotaScope;
 import com.chj.aigc.billing.QuotaScopeType;
 import com.chj.aigc.billing.TenantBillingService;
+import com.chj.aigc.tenant.TenantProject;
+import com.chj.aigc.tenant.TenantWorkspaceService;
+import com.chj.aigc.web.dto.CreateProjectRequest;
 import com.chj.aigc.web.dto.CreateBrandRequest;
 import com.chj.aigc.web.dto.CreateClientRequest;
 import com.chj.aigc.web.dto.RechargeRequest;
@@ -35,10 +38,16 @@ import org.springframework.http.HttpStatus;
 public class TenantApiController {
     private final TenantBillingService tenantBillingService;
     private final TenantAssetCatalogService tenantAssetCatalogService;
+    private final TenantWorkspaceService tenantWorkspaceService;
 
-    public TenantApiController(TenantBillingService tenantBillingService, TenantAssetCatalogService tenantAssetCatalogService) {
+    public TenantApiController(
+            TenantBillingService tenantBillingService,
+            TenantAssetCatalogService tenantAssetCatalogService,
+            TenantWorkspaceService tenantWorkspaceService
+    ) {
         this.tenantBillingService = tenantBillingService;
         this.tenantAssetCatalogService = tenantAssetCatalogService;
+        this.tenantWorkspaceService = tenantWorkspaceService;
     }
 
     @GetMapping("/wallet")
@@ -82,6 +91,35 @@ public class TenantApiController {
     @GetMapping("/clients")
     public List<Client> clients() {
         return tenantAssetCatalogService.clients("tenant-demo");
+    }
+
+    @GetMapping("/projects")
+    public List<TenantProject> projects() {
+        return tenantWorkspaceService.projects("tenant-demo");
+    }
+
+    @PostMapping("/projects")
+    public TenantProject createProject(@RequestBody CreateProjectRequest request, HttpServletRequest httpRequest) {
+        requireAnyRole(httpRequest, "tenant_owner");
+        return tenantWorkspaceService.createProject(
+                request.projectId(),
+                "tenant-demo",
+                request.name()
+        );
+    }
+
+    @GetMapping("/members")
+    public List<Map<String, Object>> members() {
+        return tenantWorkspaceService.members("tenant-demo").stream()
+                .map(user -> Map.<String, Object>of(
+                        "id", user.id(),
+                        "username", user.username(),
+                        "displayName", user.displayName(),
+                        "roleKey", user.roleKey(),
+                        "tenantId", user.tenantId(),
+                        "active", user.active()
+                ))
+                .toList();
     }
 
     @PostMapping("/clients")

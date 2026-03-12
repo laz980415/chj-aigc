@@ -29,6 +29,12 @@ type QuotaPayload = {
   userTokenRemaining: string;
 };
 
+type ProjectPayload = {
+  id: string;
+  name: string;
+  active: boolean;
+};
+
 type ClientPayload = {
   id: string;
   name: string;
@@ -86,11 +92,13 @@ const summary = ref<SummaryPayload>({ policies: 0, auditEvents: 0, users: 0 });
 const rules = ref<RulePayload[]>([]);
 const wallet = ref<WalletPayload>({ tenantId: "tenant-demo", balance: "0", ledgerCount: 0 });
 const quotas = ref<QuotaPayload>({ projectImageRemaining: "0", userTokenRemaining: "0" });
+const projects = ref<ProjectPayload[]>([]);
 const clients = ref<ClientPayload[]>([]);
 const brands = ref<BrandPayload[]>([]);
 const assets = ref<AssetPayload[]>([]);
 const session = ref<SessionPayload | null>(null);
 const users = ref<UserPayload[]>([]);
+const members = ref<UserPayload[]>([]);
 const roles = ref<string[]>([]);
 
 const loginForm = reactive({
@@ -145,6 +153,11 @@ const quotaForm = reactive({
   used: "0",
 });
 
+const projectForm = reactive({
+  projectId: "project-ui-1",
+  name: "新投放项目",
+});
+
 const dbSummary = computed(() => {
   if (!dbInfo.value) {
     return "待检测";
@@ -184,9 +197,11 @@ async function loadDashboard() {
   summary.value = { policies: 0, auditEvents: 0, users: 0 };
   roles.value = [];
   users.value = [];
+  members.value = [];
   rules.value = [];
   wallet.value = { tenantId: "tenant-demo", balance: "0", ledgerCount: 0 };
   quotas.value = { projectImageRemaining: "0", userTokenRemaining: "0" };
+  projects.value = [];
   clients.value = [];
   brands.value = [];
   assets.value = [];
@@ -215,15 +230,19 @@ async function loadDashboard() {
   }
 
   if (canViewTenantWorkspace.value) {
-    const [walletPayload, quotaPayload, clientPayload, brandPayload, assetPayload] = await Promise.all([
+    const [walletPayload, quotaPayload, projectPayload, memberPayload, clientPayload, brandPayload, assetPayload] = await Promise.all([
       fetchJson<WalletPayload>("/api/tenant/wallet"),
       fetchJson<QuotaPayload>("/api/tenant/quotas"),
+      fetchJson<ProjectPayload[]>("/api/tenant/projects"),
+      fetchJson<UserPayload[]>("/api/tenant/members"),
       fetchJson<ClientPayload[]>("/api/tenant/clients"),
       fetchJson<BrandPayload[]>("/api/tenant/brands"),
       fetchJson<AssetPayload[]>("/api/tenant/assets"),
     ]);
     wallet.value = walletPayload;
     quotas.value = quotaPayload;
+    projects.value = projectPayload;
+    members.value = memberPayload;
     clients.value = clientPayload;
     brands.value = brandPayload;
     assets.value = assetPayload;
@@ -357,6 +376,21 @@ async function createClient() {
   await loadDashboard();
 }
 
+async function createProject() {
+  success.value = "";
+  error.value = "";
+  await fetchJson<ProjectPayload>("/api/tenant/projects", {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json",
+    },
+    body: JSON.stringify(projectForm),
+  });
+  success.value = `项目 ${projectForm.name} 已创建`;
+  quotaForm.scopeId = projectForm.projectId;
+  await loadDashboard();
+}
+
 async function createBrand() {
   success.value = "";
   error.value = "";
@@ -468,6 +502,10 @@ onMounted(() => {
           <article v-if="canViewTenantWorkspace" class="stat-card">
             <span>成员 Token 剩余</span>
             <strong>{{ quotas.userTokenRemaining }}</strong>
+          </article>
+          <article v-if="canViewTenantWorkspace" class="stat-card">
+            <span>项目数</span>
+            <strong>{{ projects.length }}</strong>
           </article>
           <article v-if="canViewTenantWorkspace" class="stat-card">
             <span>客户数</span>
@@ -617,6 +655,44 @@ onMounted(() => {
           <div v-if="canViewTenantWorkspace" class="mini-stat">
             <span>成员 Token 额度</span>
             <strong>{{ quotas.userTokenRemaining }}</strong>
+          </div>
+        </div>
+      </section>
+
+      <section v-if="canViewTenantWorkspace" class="panel">
+        <div class="panel-head">
+          <div>
+            <p class="panel-label">租户协作</p>
+            <h2>项目与成员</h2>
+          </div>
+        </div>
+        <div class="form-grid split-forms">
+          <form v-if="canManageTenantWorkspace" class="form-stack" @submit.prevent="runAction(createProject)">
+            <h3>创建项目</h3>
+            <input v-model="projectForm.projectId" placeholder="项目 ID" required>
+            <input v-model="projectForm.name" placeholder="项目名称" required>
+            <button class="action-button" type="submit">创建项目</button>
+          </form>
+
+          <div class="form-stack">
+            <h3>租户成员</h3>
+            <ul class="card-list">
+              <li v-for="member in members" :key="member.id">
+                <strong>{{ member.displayName }}</strong>
+                <div class="subtext">{{ member.roleKey }} · {{ member.username }}</div>
+              </li>
+            </ul>
+          </div>
+        </div>
+        <div class="assets-layout">
+          <div>
+            <h3>项目列表</h3>
+            <ul class="card-list">
+              <li v-for="project in projects" :key="project.id">
+                <strong>{{ project.name }}</strong>
+                <div class="subtext">{{ project.id }}</div>
+              </li>
+            </ul>
           </div>
         </div>
       </section>

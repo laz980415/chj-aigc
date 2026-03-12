@@ -295,6 +295,46 @@ class ApplicationSmokeTest {
     }
 
     @Test
+    void tenantCanCreateProjectAndSeeMembers() throws Exception {
+        String token = loginAsTenantOwner();
+
+        String createProjectBody = """
+                {
+                  "projectId": "project-created-1",
+                  "name": "春季投放项目"
+                }
+                """;
+
+        mockMvc.perform(post("/api/tenant/projects")
+                        .header("X-Auth-Token", token)
+                        .contentType("application/json")
+                        .content(createProjectBody))
+                .andExpect(status().isOk());
+
+        MvcResult projectsResult = mockMvc.perform(get("/api/tenant/projects")
+                        .header("X-Auth-Token", token))
+                .andExpect(status().isOk())
+                .andReturn();
+        List<Map<String, Object>> projects = objectMapper.readValue(
+                projectsResult.getResponse().getContentAsByteArray(),
+                new TypeReference<>() {
+                }
+        );
+        assertFalse(projects.isEmpty());
+
+        MvcResult membersResult = mockMvc.perform(get("/api/tenant/members")
+                        .header("X-Auth-Token", token))
+                .andExpect(status().isOk())
+                .andReturn();
+        List<Map<String, Object>> members = objectMapper.readValue(
+                membersResult.getResponse().getContentAsByteArray(),
+                new TypeReference<>() {
+                }
+        );
+        assertFalse(members.isEmpty());
+    }
+
+    @Test
     void tenantOwnerCannotAccessAdminApi() throws Exception {
         String token = loginAsTenantOwner();
 
