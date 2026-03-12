@@ -17,7 +17,8 @@ For this project direction:
 
 The repository now includes:
 
-- `backend-java`: platform management service
+- `chj-aigc-platform-service`: platform management service
+- `chj-aigc-auth-service`: identity and session service skeleton
 - `backend-tenant-service`: tenant workspace microservice skeleton
 - `backend-gateway-service`: Spring Cloud Gateway entry service
 
@@ -26,6 +27,14 @@ Current API shell endpoints:
 - `GET /api/db-info`
 - `GET /api/admin/summary`
 - `GET /api/admin/model-access-rules`
+
+Service documents:
+
+- [平台服务说明](/e:/ai-workspaces/docs/services/chj-aigc-platform-service.md)
+- [认证服务说明](/e:/ai-workspaces/docs/services/chj-aigc-auth-service.md)
+- [租户服务说明](/e:/ai-workspaces/docs/services/chj-aigc-tenant-service.md)
+- [网关服务说明](/e:/ai-workspaces/docs/services/chj-aigc-gateway-service.md)
+- [服务文档编写规范](/e:/ai-workspaces/docs/services/service-doc-standard.md)
 
 ## Run Java Services
 
@@ -78,7 +87,7 @@ $env:APP_DB_URL="jdbc:postgresql://36.150.108.207:54312/chj-aigc"
 $env:APP_DB_USERNAME="postgres"
 $env:APP_DB_PASSWORD="your-password"
 $env:NACOS_DISCOVERY_ENABLED="false"
-Set-Location backend-java
+Set-Location chj-aigc-platform-service
 mvn spring-boot:run "-Dmaven.repo.local=E:\repository"
 ```
 
@@ -117,7 +126,7 @@ http://127.0.0.1:8082/api/health
 Run Java tests with:
 
 ```powershell
-Set-Location backend-java
+Set-Location chj-aigc-platform-service
 mvn test "-Dmaven.repo.local=E:\repository"
 
 Set-Location ..\backend-tenant-service
@@ -149,7 +158,7 @@ Current local call path is:
 
 - `frontend-admin` -> `backend-gateway-service`
 - `backend-gateway-service` -> `backend-tenant-service` for `/api/auth/**` and `/api/tenant/**`
-- `backend-gateway-service` -> `backend-java` for platform APIs under `/api/**`
+- `backend-gateway-service` -> `chj-aigc-platform-service` for platform APIs under `/api/**`
 
 Platform service no longer directly exposes tenant workspace or login endpoints.
 Those APIs are served only by `backend-tenant-service`, and the frontend should always enter through the gateway.
