@@ -13,19 +13,9 @@ import com.chj.aigc.billing.InMemoryTenantBillingStore;
 import com.chj.aigc.billing.MybatisTenantBillingStore;
 import com.chj.aigc.billing.TenantBillingService;
 import com.chj.aigc.billing.TenantBillingStore;
-import com.chj.aigc.asset.AssetCatalogStore;
-import com.chj.aigc.asset.InMemoryAssetCatalogStore;
-import com.chj.aigc.asset.MybatisAssetCatalogStore;
-import com.chj.aigc.asset.TenantAssetCatalogService;
-import com.chj.aigc.tenant.InMemoryTenantProjectStore;
-import com.chj.aigc.tenant.MybatisTenantProjectStore;
-import com.chj.aigc.tenant.TenantProjectStore;
-import com.chj.aigc.tenant.TenantWorkspaceService;
-import com.chj.aigc.persistence.mapper.AssetCatalogMapper;
 import com.chj.aigc.persistence.mapper.AuthMapper;
 import com.chj.aigc.persistence.mapper.ModelAccessMapper;
 import com.chj.aigc.persistence.mapper.TenantBillingMapper;
-import com.chj.aigc.persistence.mapper.TenantProjectMapper;
 import com.baomidou.mybatisplus.core.MybatisConfiguration;
 import com.baomidou.mybatisplus.extension.spring.MybatisSqlSessionFactoryBean;
 import com.zaxxer.hikari.HikariDataSource;
@@ -49,7 +39,8 @@ import org.springframework.web.servlet.config.annotation.WebMvcConfigurer;
 @Configuration
 public class ApplicationConfig {
     /**
-     * 统一装配 Web、鉴权、存储和租户工作台相关组件。
+     * 统一装配平台服务需要的 Web、鉴权和平台管理组件。
+     * 租户工作台能力已经迁移到独立的 backend-tenant-service。
      */
     @Bean
     @ConditionalOnMissingBean(DataSource.class)
@@ -134,34 +125,6 @@ public class ApplicationConfig {
     @Bean
     public TenantBillingService tenantBillingService(TenantBillingStore tenantBillingStore) {
         return new TenantBillingService(tenantBillingStore);
-    }
-
-    @Bean
-    public AssetCatalogStore assetCatalogStore(ObjectProvider<AssetCatalogMapper> mapperProvider) {
-        AssetCatalogMapper mapper = mapperProvider.getIfAvailable();
-        if (mapper != null) {
-            return new MybatisAssetCatalogStore(mapper);
-        }
-        return new InMemoryAssetCatalogStore();
-    }
-
-    @Bean
-    public TenantAssetCatalogService tenantAssetCatalogService(AssetCatalogStore assetCatalogStore) {
-        return new TenantAssetCatalogService(assetCatalogStore);
-    }
-
-    @Bean
-    public TenantProjectStore tenantProjectStore(ObjectProvider<TenantProjectMapper> mapperProvider) {
-        TenantProjectMapper mapper = mapperProvider.getIfAvailable();
-        if (mapper != null) {
-            return new MybatisTenantProjectStore(mapper);
-        }
-        return new InMemoryTenantProjectStore();
-    }
-
-    @Bean
-    public TenantWorkspaceService tenantWorkspaceService(TenantProjectStore tenantProjectStore, AuthService authService) {
-        return new TenantWorkspaceService(tenantProjectStore, authService);
     }
 
     @Bean

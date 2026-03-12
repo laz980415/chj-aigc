@@ -25,11 +25,6 @@ Current API shell endpoints:
 - `GET /api/db-info`
 - `GET /api/admin/summary`
 - `GET /api/admin/model-access-rules`
-- `GET /api/tenant/wallet`
-- `GET /api/tenant/quotas`
-- `GET /api/tenant/clients`
-- `GET /api/tenant/brands/{clientId}`
-- `GET /api/tenant/assets`
 
 ## Run Java Services
 
@@ -109,7 +104,6 @@ After startup, open:
 http://127.0.0.1:8080/api/health
 http://127.0.0.1:8081/gateway/health
 http://127.0.0.1:8080/api/admin/summary
-http://127.0.0.1:8080/api/tenant/wallet
 http://127.0.0.1:8082/api/health
 ```
 
@@ -149,6 +143,9 @@ Current local call path is:
 - `frontend-admin` -> `backend-gateway-service`
 - `backend-gateway-service` -> `backend-tenant-service` for `/api/auth/**` and `/api/tenant/**`
 - `backend-gateway-service` -> `backend-java` for platform APIs under `/api/**`
+
+Platform service no longer directly exposes tenant workspace or login endpoints.
+Those APIs are served only by `backend-tenant-service`, and the frontend should always enter through the gateway.
 
 ## Microservice Notes
 

@@ -134,6 +134,7 @@ Set-Location E:\ai-workspaces\infra\nacos
 - `/api/**` -> `backend-java`
 
 也就是说，前端开发环境已经统一走网关，并且租户登录、项目、成员、额度接口会优先进租户服务。
+平台服务已经移除 `/api/auth/**` 和 `/api/tenant/**` 控制器，只保留超管平台能力。
 为了兼容联调和逐步迁移，仍保留显式实验入口：
 
 - `/tenant-api/**` -> `backend-tenant-service`
