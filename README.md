@@ -113,7 +113,13 @@ Open:
 http://127.0.0.1:5173
 ```
 
-The Vite dev server currently proxies `/api` requests to the platform service at `http://127.0.0.1:8080`.
+The Vite dev server now proxies `/api` requests to the gateway service at `http://127.0.0.1:8081`.
+
+Current local call path is:
+
+- `frontend-admin` -> `backend-gateway-service`
+- `backend-gateway-service` -> `backend-java`
+- later `backend-gateway-service` -> `backend-tenant-service`
 
 ## Microservice Notes
 

@@ -13,12 +13,12 @@ spring:
         group: ${NACOS_GROUP:DEFAULT_GROUP}
     gateway:
       routes:
-        - id: platform-service
+        - id: platform-api
           uri: ${PLATFORM_SERVICE_URI:http://127.0.0.1:8080}
           predicates:
-            - Path=/platform-api/**
+            - Path=/api/**
           filters:
-            - StripPrefix=1
+            - DedupeResponseHeader=Access-Control-Allow-Origin Access-Control-Allow-Credentials
         - id: tenant-service
           uri: ${TENANT_SERVICE_URI:http://127.0.0.1:8082}
           predicates:
