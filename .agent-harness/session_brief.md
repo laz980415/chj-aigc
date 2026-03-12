@@ -4,22 +4,22 @@ Project: AIGC Advertising SaaS Platform
 
 ## Status Snapshot
 
-- Pending: 9
+- Pending: 8
 - In progress: 1
 - Blocked: 0
-- Done: 2
+- Done: 3
 
 ## Recommended Next Feature
 
-- ID: feature-003
-- Title: Design unified model provider registry and capability schema
+- ID: feature-004
+- Title: Implement platform pricing, metering units, and ledger model
 - State: in_progress
-- Description: Create the abstraction for providers, models, capabilities, status, and vendor replacement within the platform.
-- Depends on: feature-001
+- Description: Define internal price units and billing records so vendor changes do not break tenant billing.
+- Depends on: feature-001, feature-003
 - Acceptance criteria:
-  - Model registry supports multiple providers and multiple modalities
-  - Capability types cover text, image, and video generation
-  - Registry can map platform model aliases to vendor-specific identifiers
+  - Pricing model supports token, image, and video-second dimensions
+  - Ledger records both internal price and underlying vendor reference
+  - Historical charges remain stable after future price changes
 
 ## Session Rules
 

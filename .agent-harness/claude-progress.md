@@ -14,3 +14,8 @@ Validation: Reviewed the documents against the app spec and confirmed they cover
 Implemented the core identity and RBAC domain model in platform_core/identity.py, including users, tenants, projects, memberships, built-in roles, permission evaluation, and a documented RBAC matrix.
 
 Validation: Ran python -m unittest discover -s tests -v and verified the new identity tests cover platform, tenant, and project authorization behavior.
+
+## 2026-03-12T04:44:23+00:00 - feature-003 - Design unified model provider registry and capability schema
+Implemented a unified model provider registry in platform_core/models.py with provider definitions, platform model aliases, capability types, metering dimensions, provider bindings, route resolution, and default seeded mappings for copy, image, and video generation.
+
+Validation: Ran python -m unittest discover -s tests -v and verified model registry tests for capability filtering, route priority, async routing, and disabled models.

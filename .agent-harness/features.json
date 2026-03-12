@@ -60,13 +60,17 @@
       "depends_on": [
         "feature-001"
       ],
-      "state": "in_progress",
+      "state": "done",
       "created_at": "2026-03-12T04:30:00+00:00",
-      "updated_at": "2026-03-12T04:43:26+00:00",
+      "updated_at": "2026-03-12T04:44:23+00:00",
       "session_notes": [
         {
           "at": "2026-03-12T04:43:26+00:00",
           "note": "Starting implementation of model provider registry and capability schema."
+        },
+        {
+          "at": "2026-03-12T04:44:23+00:00",
+          "note": "Implemented a unified model provider registry in platform_core/models.py with provider definitions, platform model aliases, capability types, metering dimensions, provider bindings, route resolution, and default seeded mappings for copy, image, and video generation."
         }
       ]
     },
@@ -83,10 +87,15 @@
         "feature-001",
         "feature-003"
       ],
-      "state": "pending",
+      "state": "in_progress",
       "created_at": "2026-03-12T04:30:00+00:00",
-      "updated_at": "2026-03-12T04:30:00+00:00",
-      "session_notes": []
+      "updated_at": "2026-03-12T04:45:00+00:00",
+      "session_notes": [
+        {
+          "at": "2026-03-12T04:45:00+00:00",
+          "note": "Starting implementation of pricing, metering units, and ledger model."
+        }
+      ]
     },
     {
       "id": "feature-005",
