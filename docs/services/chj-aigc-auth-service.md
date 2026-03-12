@@ -43,6 +43,7 @@
 - `GET /api/health`
 - `POST /api/auth/login`
 - `GET /api/auth/me`
+- `GET /api/auth/introspect`
 
 ## 6. 数据存储
 
@@ -85,6 +86,6 @@ Set-Location E:\ai-workspaces\infra\dev
 
 ## 10. 当前已知限制
 
-- 目前只接管了 `/api/auth/**` 的登录和会话查询
+- 目前只接管了 `/api/auth/**` 的登录、会话查询和内部校验
 - 平台和租户服务暂时还直接依赖原有账号表
 - 租户服务内部仍保留成员管理所需的账号存储能力，后续还要继续下沉到认证服务

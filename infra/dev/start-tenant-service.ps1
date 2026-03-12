@@ -3,6 +3,7 @@ param(
     [string]$DbUsername = "postgres",
     [string]$DbPassword = "Linten@2023!",
     [string]$NacosServer = "127.0.0.1:8848",
+    [string]$AuthServiceUri = "http://127.0.0.1:8083",
     [string]$LogFile = ""
 )
 
@@ -14,6 +15,8 @@ $env:APP_DB_USERNAME = $DbUsername
 $env:APP_DB_PASSWORD = $DbPassword
 $env:NACOS_DISCOVERY_ENABLED = "true"
 $env:NACOS_SERVER_ADDR = $NacosServer
+$env:AUTH_SESSION_VALIDATION_MODE = "remote"
+$env:AUTH_SERVICE_URI = $AuthServiceUri
 
 Set-Location E:\ai-workspaces\backend-tenant-service
 if ([string]::IsNullOrWhiteSpace($LogFile)) {

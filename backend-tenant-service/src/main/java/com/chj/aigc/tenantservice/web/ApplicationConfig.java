@@ -8,7 +8,10 @@ import com.chj.aigc.tenantservice.asset.TenantAssetCatalogService;
 import com.chj.aigc.tenantservice.auth.AuthInterceptor;
 import com.chj.aigc.tenantservice.auth.AuthService;
 import com.chj.aigc.tenantservice.auth.AuthStore;
+import com.chj.aigc.tenantservice.auth.LocalSessionLookupService;
 import com.chj.aigc.tenantservice.auth.MybatisAuthStore;
+import com.chj.aigc.tenantservice.auth.RemoteSessionLookupService;
+import com.chj.aigc.tenantservice.auth.SessionLookupService;
 import com.chj.aigc.tenantservice.billing.MybatisTenantBillingStore;
 import com.chj.aigc.tenantservice.billing.TenantBillingService;
 import com.chj.aigc.tenantservice.billing.TenantBillingStore;
@@ -32,6 +35,7 @@ import org.springframework.core.io.ClassPathResource;
 import org.springframework.core.io.support.PathMatchingResourcePatternResolver;
 import org.springframework.jdbc.datasource.init.DataSourceInitializer;
 import org.springframework.jdbc.datasource.init.ResourceDatabasePopulator;
+import org.springframework.web.client.RestClient;
 import org.springframework.web.servlet.config.annotation.CorsRegistry;
 import org.springframework.web.servlet.config.annotation.InterceptorRegistry;
 import org.springframework.web.servlet.config.annotation.WebMvcConfigurer;
@@ -93,6 +97,18 @@ public class ApplicationConfig {
     }
 
     @Bean
+    public SessionLookupService sessionLookupService(
+            AuthStore authStore,
+            @Value("${auth.session-validation.mode}") String mode,
+            @Value("${auth.session-validation.auth-service-uri}") String authServiceUri
+    ) {
+        if ("remote".equalsIgnoreCase(mode)) {
+            return new RemoteSessionLookupService(RestClient.builder().baseUrl(authServiceUri).build());
+        }
+        return new LocalSessionLookupService(authStore);
+    }
+
+    @Bean
     public AssetCatalogStore assetCatalogStore(AssetCatalogMapper assetCatalogMapper) {
         return new MybatisAssetCatalogStore(assetCatalogMapper);
     }
@@ -123,8 +139,8 @@ public class ApplicationConfig {
     }
 
     @Bean
-    public AuthInterceptor authInterceptor(AuthService authService, ObjectMapper objectMapper) {
-        return new AuthInterceptor(authService, objectMapper);
+    public AuthInterceptor authInterceptor(SessionLookupService sessionLookupService, ObjectMapper objectMapper) {
+        return new AuthInterceptor(sessionLookupService, objectMapper);
     }
 
     @Bean

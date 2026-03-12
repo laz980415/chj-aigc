@@ -37,6 +37,15 @@ public class AuthController {
         return ApiResponse.success(toPayload(session));
     }
 
+    /**
+     * 提供给其他微服务使用的会话校验接口。
+     */
+    @GetMapping("/introspect")
+    public ApiResponse<Map<String, Object>> introspect(HttpServletRequest request) {
+        AuthSession session = (AuthSession) request.getAttribute(AuthInterceptor.REQUEST_SESSION_KEY);
+        return ApiResponse.success(toPayload(session));
+    }
+
     private Map<String, Object> toPayload(AuthSession session) {
         Map<String, Object> payload = new LinkedHashMap<>();
         payload.put("token", session.token());

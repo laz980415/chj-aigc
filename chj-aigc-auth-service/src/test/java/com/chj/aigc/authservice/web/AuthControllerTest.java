@@ -15,7 +15,7 @@ import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.test.web.servlet.MvcResult;
 
 /**
- * 认证服务登录与当前用户接口冒烟测试。
+ * 认证服务登录、当前用户和内部会话校验接口冒烟测试。
  */
 @SpringBootTest(classes = AuthServiceApplication.class)
 @AutoConfigureMockMvc
@@ -48,6 +48,13 @@ class AuthControllerTest {
                         .header("X-Auth-Token", token))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.code").value(0))
+                .andExpect(jsonPath("$.data.username").value("tenant_owner"));
+
+        mockMvc.perform(get("/api/auth/introspect")
+                        .header("X-Auth-Token", token))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.code").value(0))
+                .andExpect(jsonPath("$.data.token").value(token))
                 .andExpect(jsonPath("$.data.username").value("tenant_owner"));
     }
 }

@@ -34,3 +34,8 @@ management:
 logging:
   pattern:
     console: "%d{yyyy-MM-dd HH:mm:ss.SSS} [%thread] %-5level [%X{traceId:-no-trace}] %logger{36} - %msg%n"
+
+auth:
+  session-validation:
+    mode: ${AUTH_SESSION_VALIDATION_MODE:local}
+    auth-service-uri: ${AUTH_SERVICE_URI:http://127.0.0.1:8083}

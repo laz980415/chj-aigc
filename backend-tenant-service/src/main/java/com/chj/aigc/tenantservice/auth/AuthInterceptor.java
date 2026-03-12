@@ -15,11 +15,11 @@ public final class AuthInterceptor implements HandlerInterceptor {
     public static final String TOKEN_HEADER = "X-Auth-Token";
     public static final String REQUEST_SESSION_KEY = "currentSession";
 
-    private final AuthService authService;
+    private final SessionLookupService sessionLookupService;
     private final ObjectMapper objectMapper;
 
-    public AuthInterceptor(AuthService authService, ObjectMapper objectMapper) {
-        this.authService = authService;
+    public AuthInterceptor(SessionLookupService sessionLookupService, ObjectMapper objectMapper) {
+        this.sessionLookupService = sessionLookupService;
         this.objectMapper = objectMapper;
     }
 
@@ -36,7 +36,7 @@ public final class AuthInterceptor implements HandlerInterceptor {
             return false;
         }
 
-        AuthSession session = authService.findSession(token).orElse(null);
+        AuthSession session = sessionLookupService.findSession(token).orElse(null);
         if (session == null) {
             writeJson(response, HttpServletResponse.SC_UNAUTHORIZED, "登录已失效，请重新登录");
             return false;
