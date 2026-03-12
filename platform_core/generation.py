@@ -1,5 +1,10 @@
 from __future__ import annotations
 
+"""生成任务编排模块。
+
+负责把平台模型路由、品牌提示词和供应商调用适配成统一的生成任务流程。
+"""
+
 from dataclasses import dataclass, field
 from enum import Enum
 

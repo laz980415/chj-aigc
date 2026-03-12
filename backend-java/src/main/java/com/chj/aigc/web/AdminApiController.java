@@ -20,6 +20,10 @@ import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
+/**
+ * 平台超管 API。
+ * 负责平台账号管理和模型访问策略维护，不处理租户内部项目和成员运营。
+ */
 @RestController
 @RequestMapping("/api/admin")
 public class AdminApiController {

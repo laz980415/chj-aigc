@@ -5,6 +5,9 @@ import java.sql.SQLException;
 import java.util.List;
 import org.springframework.jdbc.core.JdbcTemplate;
 
+/**
+ * 基于 PostgreSQL 的租户项目存储实现。
+ */
 public final class JdbcTenantProjectStore implements TenantProjectStore {
     private final JdbcTemplate jdbcTemplate;
 

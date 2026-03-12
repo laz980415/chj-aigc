@@ -1,5 +1,10 @@
 from __future__ import annotations
 
+"""使用量结算与额度校验模块。
+
+负责把生成任务产生的 usage 映射到平台计费和项目/成员额度体系。
+"""
+
 from dataclasses import dataclass, field
 from decimal import Decimal
 from enum import Enum

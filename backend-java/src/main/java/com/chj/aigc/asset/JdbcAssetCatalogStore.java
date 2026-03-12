@@ -8,6 +8,9 @@ import java.util.Set;
 import java.util.stream.Collectors;
 import org.springframework.jdbc.core.JdbcTemplate;
 
+/**
+ * 基于 PostgreSQL 的租户客户、品牌和素材存储实现。
+ */
 public final class JdbcAssetCatalogStore implements AssetCatalogStore {
     private final JdbcTemplate jdbcTemplate;
 

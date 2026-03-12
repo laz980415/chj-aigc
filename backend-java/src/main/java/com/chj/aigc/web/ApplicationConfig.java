@@ -31,6 +31,9 @@ import org.springframework.web.servlet.config.annotation.WebMvcConfigurer;
 
 @Configuration
 public class ApplicationConfig {
+    /**
+     * 统一装配 Web、鉴权、存储和租户工作台相关组件。
+     */
     @Bean
     public ModelAccessPolicyEngine modelAccessPolicyEngine() {
         return new ModelAccessPolicyEngine();

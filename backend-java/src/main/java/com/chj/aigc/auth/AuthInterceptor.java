@@ -6,6 +6,10 @@ import java.io.IOException;
 import java.util.Set;
 import org.springframework.web.servlet.HandlerInterceptor;
 
+/**
+ * 统一校验 API 请求上的登录态和角色边界。
+ * 平台接口只允许超管访问，租户接口允许租户角色访问，再由控制器继续收窄写权限。
+ */
 public final class AuthInterceptor implements HandlerInterceptor {
     public static final String TOKEN_HEADER = "X-Auth-Token";
     public static final String REQUEST_SESSION_KEY = "currentSession";

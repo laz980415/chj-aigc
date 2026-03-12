@@ -1,9 +1,14 @@
 package com.chj.aigc.billing;
 
 import java.math.BigDecimal;
+import java.util.List;
 import java.util.LinkedHashMap;
 import java.util.Map;
 
+/**
+ * 负责租户钱包和额度的读写编排。
+ * 当前提供钱包快照、充值以及项目/成员额度配置能力。
+ */
 public final class TenantBillingService {
     private final TenantBillingStore store;
     private final TenantFinanceService financeService = new TenantFinanceService();
@@ -13,6 +18,9 @@ public final class TenantBillingService {
         seedIfNeeded("tenant-demo");
     }
 
+    /**
+     * 返回租户钱包摘要。
+     */
     public Map<String, Object> walletSnapshot(String tenantId) {
         TenantWallet wallet = wallet(tenantId);
         Map<String, Object> payload = new LinkedHashMap<>();
@@ -40,6 +48,13 @@ public final class TenantBillingService {
     public Map<String, Object> upsertQuota(QuotaAllocation allocation) {
         store.saveQuotaAllocation(allocation);
         return quotaSnapshot(allocation.tenantId());
+    }
+
+    /**
+     * 返回租户下全部额度分配，供页面展示项目额度和成员额度明细。
+     */
+    public List<QuotaAllocation> listQuotaAllocations(String tenantId) {
+        return store.listQuotaAllocations(tenantId);
     }
 
     private TenantWallet wallet(String tenantId) {

@@ -1,5 +1,10 @@
 from __future__ import annotations
 
+"""模型注册与路由核心模块。
+
+负责抽象供应商、平台模型别名、能力类型和路由优先级，便于后续替换模型厂商。
+"""
+
 from dataclasses import dataclass, field
 from enum import Enum
 

@@ -1,5 +1,10 @@
 from __future__ import annotations
 
+"""品牌安全提示词组装模块。
+
+负责把品牌规则、素材和用户意图整理成可审计的提示词上下文，避免生成结果偏离品牌约束。
+"""
+
 from dataclasses import dataclass, field
 from enum import Enum
 

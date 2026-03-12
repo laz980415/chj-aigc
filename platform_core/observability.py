@@ -1,5 +1,10 @@
 from __future__ import annotations
 
+"""审计与安全观测模块。
+
+负责记录生成摘要、费用摘要和安全违规信息，支撑平台后续排障和审计。
+"""
+
 from dataclasses import dataclass, field
 
 from .billing import ChargeResult

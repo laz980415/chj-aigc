@@ -335,11 +335,89 @@ class ApplicationSmokeTest {
     }
 
     @Test
+    void tenantOwnerCanCreateMemberAndAssignUserQuota() throws Exception {
+        String token = loginAsTenantOwner();
+
+        String createMemberBody = """
+                {
+                  "userId": "user-created-member-1",
+                  "username": "tenant_member_new",
+                  "password": "Member@123",
+                  "displayName": "新租户成员",
+                  "roleKey": "tenant_member"
+                }
+                """;
+
+        mockMvc.perform(post("/api/tenant/members")
+                        .header("X-Auth-Token", token)
+                        .contentType("application/json")
+                        .content(createMemberBody))
+                .andExpect(status().isOk());
+
+        String quotaBody = """
+                {
+                  "allocationId": "quota-user-created-1",
+                  "scopeType": "user",
+                  "scopeId": "user-created-member-1",
+                  "dimension": "tokens",
+                  "limit": "20000",
+                  "used": "500"
+                }
+                """;
+
+        mockMvc.perform(post("/api/tenant/quotas")
+                        .header("X-Auth-Token", token)
+                        .contentType("application/json")
+                        .content(quotaBody))
+                .andExpect(status().isOk());
+
+        MvcResult quotaListResult = mockMvc.perform(get("/api/tenant/quota-allocations")
+                        .header("X-Auth-Token", token))
+                .andExpect(status().isOk())
+                .andReturn();
+        List<Map<String, Object>> quotaAllocations = objectMapper.readValue(
+                quotaListResult.getResponse().getContentAsByteArray(),
+                new TypeReference<>() {
+                }
+        );
+        assertFalse(quotaAllocations.isEmpty());
+
+        MvcResult membersResult = mockMvc.perform(get("/api/tenant/members")
+                        .header("X-Auth-Token", token))
+                .andExpect(status().isOk())
+                .andReturn();
+        List<Map<String, Object>> members = objectMapper.readValue(
+                membersResult.getResponse().getContentAsByteArray(),
+                new TypeReference<>() {
+                }
+        );
+        assertFalse(members.isEmpty());
+    }
+
+    @Test
     void tenantOwnerCannotAccessAdminApi() throws Exception {
         String token = loginAsTenantOwner();
 
         mockMvc.perform(get("/api/admin/users")
                         .header("X-Auth-Token", token))
+                .andExpect(status().isForbidden());
+    }
+
+    @Test
+    void tenantMemberCannotWriteTenantWorkspace() throws Exception {
+        String token = login("tenant_member", "Member@123");
+
+        String createProjectBody = """
+                {
+                  "projectId": "project-member-blocked",
+                  "name": "成员不可创建项目"
+                }
+                """;
+
+        mockMvc.perform(post("/api/tenant/projects")
+                        .header("X-Auth-Token", token)
+                        .contentType("application/json")
+                        .content(createProjectBody))
                 .andExpect(status().isForbidden());
     }
 }

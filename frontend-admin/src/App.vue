@@ -1,4 +1,8 @@
 <script setup lang="ts">
+/**
+ * 管理后台单页入口。
+ * 当前按登录角色动态渲染平台后台和租户后台，覆盖充值、模型策略、项目、成员、客户和素材等核心能力。
+ */
 import { computed, onMounted, reactive, ref } from "vue";
 
 type SummaryPayload = {
@@ -27,6 +31,15 @@ type WalletPayload = {
 type QuotaPayload = {
   projectImageRemaining: string;
   userTokenRemaining: string;
+};
+
+type QuotaAllocationPayload = {
+  id: string;
+  scopeType: string;
+  scopeId: string;
+  dimension: string;
+  limit: string;
+  used: string;
 };
 
 type ProjectPayload = {
@@ -92,6 +105,7 @@ const summary = ref<SummaryPayload>({ policies: 0, auditEvents: 0, users: 0 });
 const rules = ref<RulePayload[]>([]);
 const wallet = ref<WalletPayload>({ tenantId: "tenant-demo", balance: "0", ledgerCount: 0 });
 const quotas = ref<QuotaPayload>({ projectImageRemaining: "0", userTokenRemaining: "0" });
+const quotaAllocations = ref<QuotaAllocationPayload[]>([]);
 const projects = ref<ProjectPayload[]>([]);
 const clients = ref<ClientPayload[]>([]);
 const brands = ref<BrandPayload[]>([]);
@@ -158,6 +172,14 @@ const projectForm = reactive({
   name: "新投放项目",
 });
 
+const memberForm = reactive({
+  userId: "tenant-member-ui-1",
+  username: "tenant_member_new",
+  password: "Member@123",
+  displayName: "新租户成员",
+  roleKey: "tenant_member",
+});
+
 const dbSummary = computed(() => {
   if (!dbInfo.value) {
     return "待检测";
@@ -174,7 +196,11 @@ const workspaceTitle = computed(() => isPlatformAdmin.value ? "平台后台" : "
 const workspaceCopy = computed(() => isPlatformAdmin.value
   ? "平台侧只管理租户开通、租户充值、模型权限和租户级别运营配置。"
   : "租户侧负责项目、成员、客户、品牌和素材等日常运营动作。");
+const quotaScopeOptions = computed(() => quotaForm.scopeType === "project"
+  ? projects.value.map((project) => ({ value: project.id, label: project.name }))
+  : members.value.map((member) => ({ value: member.id, label: `${member.displayName} (${member.username})` })));
 
+// 统一附带令牌访问 API，失败时直接抛错交给页面底部状态栏展示。
 async function fetchJson<T>(url: string, init?: RequestInit): Promise<T> {
   const token = localStorage.getItem("chj_aigc_token");
   const headers = new Headers(init?.headers ?? {});
@@ -191,6 +217,7 @@ async function fetchJson<T>(url: string, init?: RequestInit): Promise<T> {
   return response.json() as Promise<T>;
 }
 
+// 按当前登录角色加载对应工作台数据，避免平台侧继续看到租户内部项目明细。
 async function loadDashboard() {
   loading.value = true;
   error.value = "";
@@ -201,6 +228,7 @@ async function loadDashboard() {
   rules.value = [];
   wallet.value = { tenantId: "tenant-demo", balance: "0", ledgerCount: 0 };
   quotas.value = { projectImageRemaining: "0", userTokenRemaining: "0" };
+  quotaAllocations.value = [];
   projects.value = [];
   clients.value = [];
   brands.value = [];
@@ -230,9 +258,10 @@ async function loadDashboard() {
   }
 
   if (canViewTenantWorkspace.value) {
-    const [walletPayload, quotaPayload, projectPayload, memberPayload, clientPayload, brandPayload, assetPayload] = await Promise.all([
+    const [walletPayload, quotaPayload, quotaAllocationPayload, projectPayload, memberPayload, clientPayload, brandPayload, assetPayload] = await Promise.all([
       fetchJson<WalletPayload>("/api/tenant/wallet"),
       fetchJson<QuotaPayload>("/api/tenant/quotas"),
+      fetchJson<QuotaAllocationPayload[]>("/api/tenant/quota-allocations"),
       fetchJson<ProjectPayload[]>("/api/tenant/projects"),
       fetchJson<UserPayload[]>("/api/tenant/members"),
       fetchJson<ClientPayload[]>("/api/tenant/clients"),
@@ -241,6 +270,7 @@ async function loadDashboard() {
     ]);
     wallet.value = walletPayload;
     quotas.value = quotaPayload;
+    quotaAllocations.value = quotaAllocationPayload;
     projects.value = projectPayload;
     members.value = memberPayload;
     clients.value = clientPayload;
@@ -248,9 +278,11 @@ async function loadDashboard() {
     assets.value = assetPayload;
   }
 
+  syncQuotaScope();
   loading.value = false;
 }
 
+// 平台超管创建任意账号。
 async function createUser() {
   success.value = "";
   error.value = "";
@@ -265,6 +297,7 @@ async function createUser() {
   await loadDashboard();
 }
 
+// 登录成功后写入本地令牌，并触发当前角色的工作台加载。
 async function login() {
   loading.value = true;
   error.value = "";
@@ -289,6 +322,7 @@ async function login() {
   await loadDashboard();
 }
 
+// 页面首次挂载时尝试复用已有令牌恢复登录态。
 async function bootstrap() {
   const token = localStorage.getItem("chj_aigc_token");
   if (!token) {
@@ -319,6 +353,7 @@ function logout() {
   success.value = "";
 }
 
+// 平台超管创建模型访问规则。
 async function createRule() {
   success.value = "";
   error.value = "";
@@ -333,6 +368,7 @@ async function createRule() {
   await loadDashboard();
 }
 
+// 给租户钱包增加余额。
 async function rechargeWallet() {
   success.value = "";
   error.value = "";
@@ -347,6 +383,7 @@ async function rechargeWallet() {
   await loadDashboard();
 }
 
+// 保存项目或成员额度分配。
 async function saveQuota() {
   success.value = "";
   error.value = "";
@@ -361,6 +398,7 @@ async function saveQuota() {
   await loadDashboard();
 }
 
+// 租户负责人创建客户。
 async function createClient() {
   success.value = "";
   error.value = "";
@@ -376,6 +414,7 @@ async function createClient() {
   await loadDashboard();
 }
 
+// 租户负责人创建项目，并把额度范围默认切到新项目。
 async function createProject() {
   success.value = "";
   error.value = "";
@@ -391,6 +430,24 @@ async function createProject() {
   await loadDashboard();
 }
 
+// 租户负责人创建成员，并把额度范围默认切到新成员。
+async function createMember() {
+  success.value = "";
+  error.value = "";
+  await fetchJson<UserPayload>("/api/tenant/members", {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json",
+    },
+    body: JSON.stringify(memberForm),
+  });
+  success.value = `成员 ${memberForm.displayName} 已创建`;
+  quotaForm.scopeType = "user";
+  quotaForm.scopeId = memberForm.userId;
+  await loadDashboard();
+}
+
+// 租户负责人创建品牌。
 async function createBrand() {
   success.value = "";
   error.value = "";
@@ -405,12 +462,24 @@ async function createBrand() {
   await loadDashboard();
 }
 
+// 所有按钮动作统一走这一层，避免页面逻辑分散处理异常。
 async function runAction(action: () => Promise<void>) {
   try {
     await action();
   } catch (err) {
     error.value = err instanceof Error ? err.message : "未知错误";
     loading.value = false;
+  }
+}
+
+function syncQuotaScope() {
+  const options = quotaScopeOptions.value;
+  if (options.length === 0) {
+    quotaForm.scopeId = "";
+    return;
+  }
+  if (!options.some((option) => option.value === quotaForm.scopeId)) {
+    quotaForm.scopeId = options[0]!.value;
   }
 }
 
@@ -632,11 +701,15 @@ onMounted(() => {
           <form v-if="canManageTenantWorkspace" class="form-stack" @submit.prevent="runAction(saveQuota)">
             <h3>额度配置</h3>
             <input v-model="quotaForm.allocationId" placeholder="额度 ID" required>
-            <select v-model="quotaForm.scopeType">
+            <select v-model="quotaForm.scopeType" @change="syncQuotaScope">
               <option value="project">项目</option>
               <option value="user">用户</option>
             </select>
-            <input v-model="quotaForm.scopeId" placeholder="范围 ID" required>
+            <select v-model="quotaForm.scopeId">
+              <option v-for="option in quotaScopeOptions" :key="option.value" :value="option.value">
+                {{ option.label }}
+              </option>
+            </select>
             <select v-model="quotaForm.dimension">
               <option value="image_count">图片数量</option>
               <option value="tokens">Token</option>
@@ -657,6 +730,30 @@ onMounted(() => {
             <strong>{{ quotas.userTokenRemaining }}</strong>
           </div>
         </div>
+        <div v-if="canViewTenantWorkspace" class="table-wrap">
+          <table>
+            <thead>
+              <tr>
+                <th>额度 ID</th>
+                <th>范围类型</th>
+                <th>范围对象</th>
+                <th>维度</th>
+                <th>上限</th>
+                <th>已用</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr v-for="allocation in quotaAllocations" :key="allocation.id">
+                <td>{{ allocation.id }}</td>
+                <td>{{ allocation.scopeType }}</td>
+                <td>{{ allocation.scopeId }}</td>
+                <td>{{ allocation.dimension }}</td>
+                <td>{{ allocation.limit }}</td>
+                <td>{{ allocation.used }}</td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
       </section>
 
       <section v-if="canViewTenantWorkspace" class="panel">
@@ -672,6 +769,19 @@ onMounted(() => {
             <input v-model="projectForm.projectId" placeholder="项目 ID" required>
             <input v-model="projectForm.name" placeholder="项目名称" required>
             <button class="action-button" type="submit">创建项目</button>
+          </form>
+
+          <form v-if="canManageTenantWorkspace" class="form-stack" @submit.prevent="runAction(createMember)">
+            <h3>创建成员</h3>
+            <input v-model="memberForm.userId" placeholder="成员 ID" required>
+            <input v-model="memberForm.username" placeholder="登录名" required>
+            <input v-model="memberForm.displayName" placeholder="显示名" required>
+            <input v-model="memberForm.password" placeholder="初始密码" required>
+            <select v-model="memberForm.roleKey">
+              <option value="tenant_owner">租户负责人</option>
+              <option value="tenant_member">租户成员</option>
+            </select>
+            <button class="action-button" type="submit">创建成员</button>
           </form>
 
           <div class="form-stack">

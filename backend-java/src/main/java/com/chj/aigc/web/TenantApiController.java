@@ -6,6 +6,8 @@ import com.chj.aigc.asset.Client;
 import com.chj.aigc.asset.TenantAssetCatalogService;
 import com.chj.aigc.auth.AuthInterceptor;
 import com.chj.aigc.auth.AuthSession;
+import com.chj.aigc.auth.AuthService;
+import com.chj.aigc.auth.AuthUser;
 import com.chj.aigc.billing.Money;
 import com.chj.aigc.billing.QuotaAllocation;
 import com.chj.aigc.billing.QuotaDimension;
@@ -17,6 +19,7 @@ import com.chj.aigc.tenant.TenantWorkspaceService;
 import com.chj.aigc.web.dto.CreateProjectRequest;
 import com.chj.aigc.web.dto.CreateBrandRequest;
 import com.chj.aigc.web.dto.CreateClientRequest;
+import com.chj.aigc.web.dto.CreateTenantMemberRequest;
 import com.chj.aigc.web.dto.RechargeRequest;
 import com.chj.aigc.web.dto.UpsertQuotaRequest;
 import jakarta.servlet.http.HttpServletRequest;
@@ -33,21 +36,28 @@ import org.springframework.web.bind.annotation.RestController;
 import org.springframework.web.server.ResponseStatusException;
 import org.springframework.http.HttpStatus;
 
+/**
+ * 租户工作台 API。
+ * 负责租户负责人和租户成员访问的钱包、额度、项目、成员、客户、品牌和素材能力。
+ */
 @RestController
 @RequestMapping("/api/tenant")
 public class TenantApiController {
     private final TenantBillingService tenantBillingService;
     private final TenantAssetCatalogService tenantAssetCatalogService;
     private final TenantWorkspaceService tenantWorkspaceService;
+    private final AuthService authService;
 
     public TenantApiController(
             TenantBillingService tenantBillingService,
             TenantAssetCatalogService tenantAssetCatalogService,
-            TenantWorkspaceService tenantWorkspaceService
+            TenantWorkspaceService tenantWorkspaceService,
+            AuthService authService
     ) {
         this.tenantBillingService = tenantBillingService;
         this.tenantAssetCatalogService = tenantAssetCatalogService;
         this.tenantWorkspaceService = tenantWorkspaceService;
+        this.authService = authService;
     }
 
     @GetMapping("/wallet")
@@ -70,6 +80,20 @@ public class TenantApiController {
     @GetMapping("/quotas")
     public Map<String, Object> quotas() {
         return tenantBillingService.quotaSnapshot("tenant-demo");
+    }
+
+    @GetMapping("/quota-allocations")
+    public List<Map<String, Object>> quotaAllocations() {
+        return tenantBillingService.listQuotaAllocations("tenant-demo").stream()
+                .map(allocation -> Map.<String, Object>of(
+                        "id", allocation.id(),
+                        "scopeType", allocation.scope().scopeType().name(),
+                        "scopeId", allocation.scope().scopeId(),
+                        "dimension", allocation.dimension().name(),
+                        "limit", allocation.limit(),
+                        "used", allocation.used()
+                ))
+                .toList();
     }
 
     @PostMapping("/quotas")
@@ -111,15 +135,22 @@ public class TenantApiController {
     @GetMapping("/members")
     public List<Map<String, Object>> members() {
         return tenantWorkspaceService.members("tenant-demo").stream()
-                .map(user -> Map.<String, Object>of(
-                        "id", user.id(),
-                        "username", user.username(),
-                        "displayName", user.displayName(),
-                        "roleKey", user.roleKey(),
-                        "tenantId", user.tenantId(),
-                        "active", user.active()
-                ))
+                .map(this::serializeUser)
                 .toList();
+    }
+
+    @PostMapping("/members")
+    public Map<String, Object> createMember(@RequestBody CreateTenantMemberRequest request, HttpServletRequest httpRequest) {
+        requireAnyRole(httpRequest, "tenant_owner");
+        AuthUser user = authService.createTenantUser(
+                request.userId(),
+                request.username(),
+                request.password(),
+                request.displayName(),
+                request.roleKey(),
+                "tenant-demo"
+        );
+        return serializeUser(user);
     }
 
     @PostMapping("/clients")
@@ -164,5 +195,16 @@ public class TenantApiController {
         if (session == null || !Set.of(roleKeys).contains(session.roleKey())) {
             throw new ResponseStatusException(HttpStatus.FORBIDDEN, "当前账号没有执行该租户操作的权限");
         }
+    }
+
+    private Map<String, Object> serializeUser(AuthUser user) {
+        return Map.of(
+                "id", user.id(),
+                "username", user.username(),
+                "displayName", user.displayName(),
+                "roleKey", user.roleKey(),
+                "tenantId", user.tenantId(),
+                "active", user.active()
+        );
     }
 }

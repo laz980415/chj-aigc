@@ -6,6 +6,9 @@ import java.sql.Timestamp;
 import java.util.List;
 import org.springframework.jdbc.core.JdbcTemplate;
 
+/**
+ * 基于 PostgreSQL 的租户钱包和额度存储实现。
+ */
 public final class JdbcTenantBillingStore implements TenantBillingStore {
     private final JdbcTemplate jdbcTemplate;
 
