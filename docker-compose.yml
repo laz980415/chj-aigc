@@ -22,9 +22,9 @@ services:
       context: ./chj-aigc-auth-service
     environment:
       SERVER_PORT: "8083"
-      APP_DB_URL: ${APP_DB_URL:-jdbc:postgresql://36.150.108.207:54312/chj-aigc}
-      APP_DB_USERNAME: ${APP_DB_USERNAME:-postgres}
-      APP_DB_PASSWORD: ${APP_DB_PASSWORD:-Linten@2023!}
+      AUTH_DB_URL: ${AUTH_DB_URL:-jdbc:postgresql://36.150.108.207:54312/chj-aigc-auth}
+      AUTH_DB_USERNAME: ${AUTH_DB_USERNAME:-postgres}
+      AUTH_DB_PASSWORD: ${AUTH_DB_PASSWORD:-Linten@2023!}
       NACOS_DISCOVERY_ENABLED: "true"
       NACOS_SERVER_ADDR: nacos:8848
     ports:
@@ -37,9 +37,9 @@ services:
     build:
       context: ./chj-aigc-platform-service
     environment:
-      APP_DB_URL: ${APP_DB_URL:-jdbc:postgresql://36.150.108.207:54312/chj-aigc}
-      APP_DB_USERNAME: ${APP_DB_USERNAME:-postgres}
-      APP_DB_PASSWORD: ${APP_DB_PASSWORD:-Linten@2023!}
+      PLATFORM_DB_URL: ${PLATFORM_DB_URL:-jdbc:postgresql://36.150.108.207:54312/chj-aigc-platform}
+      PLATFORM_DB_USERNAME: ${PLATFORM_DB_USERNAME:-postgres}
+      PLATFORM_DB_PASSWORD: ${PLATFORM_DB_PASSWORD:-Linten@2023!}
       NACOS_DISCOVERY_ENABLED: "true"
       NACOS_SERVER_ADDR: nacos:8848
       AUTH_SERVICE_URI: http://auth-service:8083
@@ -55,9 +55,9 @@ services:
     build:
       context: ./backend-tenant-service
     environment:
-      APP_DB_URL: ${APP_DB_URL:-jdbc:postgresql://36.150.108.207:54312/chj-aigc}
-      APP_DB_USERNAME: ${APP_DB_USERNAME:-postgres}
-      APP_DB_PASSWORD: ${APP_DB_PASSWORD:-Linten@2023!}
+      TENANT_DB_URL: ${TENANT_DB_URL:-jdbc:postgresql://36.150.108.207:54312/chj-aigc-tenant}
+      TENANT_DB_USERNAME: ${TENANT_DB_USERNAME:-postgres}
+      TENANT_DB_PASSWORD: ${TENANT_DB_PASSWORD:-Linten@2023!}
       NACOS_DISCOVERY_ENABLED: "true"
       NACOS_SERVER_ADDR: nacos:8848
       AUTH_SERVICE_URI: http://auth-service:8083

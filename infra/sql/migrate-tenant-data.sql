@@ -1,0 +1,14 @@
+-- 租户服务数据迁移脚本
+-- 将 tenant_projects / tenant_clients / tenant_brands / tenant_assets /
+--    tenant_quota_allocations 从 chj-aigc 迁移到 chj-aigc-tenant
+
+-- 推荐方式（本地 psql 执行）：
+-- pg_dump -h 36.150.108.207 -p 54312 -U postgres \
+--   --data-only \
+--   -t tenant_projects \
+--   -t tenant_clients \
+--   -t tenant_brands \
+--   -t tenant_assets \
+--   -t tenant_quota_allocations \
+--   chj-aigc \
+--   | psql -h 36.150.108.207 -p 54312 -U postgres chj-aigc-tenant

@@ -1,0 +1,13 @@
+-- 平台服务数据迁移脚本
+-- 将 model_access_rules / model_access_audit_events / tenant_wallet_ledger / tenant_payment_orders
+-- 从 chj-aigc 迁移到 chj-aigc-platform
+
+-- 推荐方式（本地 psql 执行）：
+-- pg_dump -h 36.150.108.207 -p 54312 -U postgres \
+--   --data-only \
+--   -t model_access_rules \
+--   -t model_access_audit_events \
+--   -t tenant_wallet_ledger \
+--   -t tenant_payment_orders \
+--   chj-aigc \
+--   | psql -h 36.150.108.207 -p 54312 -U postgres chj-aigc-platform
