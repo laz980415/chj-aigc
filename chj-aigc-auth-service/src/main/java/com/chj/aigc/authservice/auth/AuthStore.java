@@ -1,5 +1,6 @@
 package com.chj.aigc.authservice.auth;
 
+import java.util.List;
 import java.util.Optional;
 
 /**
@@ -7,6 +8,14 @@ import java.util.Optional;
  */
 public interface AuthStore {
     Optional<AuthUser> findUserByUsername(String username);
+
+    Optional<AuthUser> findUserById(String id);
+
+    List<AuthUser> listUsers();
+
+    List<AuthUser> listUsersByTenantId(String tenantId);
+
+    void saveUser(AuthUser user);
 
     Optional<AuthSession> findSessionByToken(String token);
 

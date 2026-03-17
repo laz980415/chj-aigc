@@ -150,6 +150,7 @@ type WorkspaceTab = {
 type WorkspaceMenu = {
   key: string;
   label: string;
+  icon: string;
   badge: string;
   tabs: WorkspaceTab[];
 };
@@ -276,6 +277,7 @@ const workspaceMenus = computed<WorkspaceMenu[]>(() => isPlatformAdmin.value
     {
       key: "platform-dashboard",
       label: "平台总览",
+      icon: "📊",
       badge: String(summary.value.users),
       tabs: [
         { key: "overview", label: "运营概览" },
@@ -285,6 +287,7 @@ const workspaceMenus = computed<WorkspaceMenu[]>(() => isPlatformAdmin.value
     {
       key: "platform-manage",
       label: "平台管理",
+      icon: "⚙️",
       badge: String(summary.value.policies),
       tabs: [
         { key: "accounts", label: "账号角色" },
@@ -294,6 +297,7 @@ const workspaceMenus = computed<WorkspaceMenu[]>(() => isPlatformAdmin.value
     {
       key: "platform-finance",
       label: "租户运营",
+      icon: "💰",
       badge: wallet.value.balance,
       tabs: [
         { key: "finance", label: "租户充值" },
@@ -304,6 +308,7 @@ const workspaceMenus = computed<WorkspaceMenu[]>(() => isPlatformAdmin.value
     {
       key: "tenant-dashboard",
       label: "租户总览",
+      icon: "🏠",
       badge: String(projects.value.length),
       tabs: [
         { key: "overview", label: "工作台概览" },
@@ -313,6 +318,7 @@ const workspaceMenus = computed<WorkspaceMenu[]>(() => isPlatformAdmin.value
     {
       key: "tenant-collaboration",
       label: "项目协作",
+      icon: "👥",
       badge: String(members.value.length),
       tabs: [
         { key: "members", label: "项目成员" },
@@ -321,6 +327,7 @@ const workspaceMenus = computed<WorkspaceMenu[]>(() => isPlatformAdmin.value
     {
       key: "tenant-assets",
       label: "品牌资产",
+      icon: "🎨",
       badge: String(brands.value.length),
       tabs: [
         { key: "assets", label: "客户素材" },
@@ -846,7 +853,7 @@ onBeforeUnmount(() => {
             :class="{ active: activeMenuKey === menu.key }"
             @click="selectMenu(menu.key)"
           >
-            <span>{{ menu.label }}</span>
+            <span class="sidebar-link-label"><em>{{ menu.icon }}</em>{{ menu.label }}</span>
             <strong>{{ menu.badge }}</strong>
           </button>
         </nav>
@@ -870,24 +877,15 @@ onBeforeUnmount(() => {
           <div class="hero-copy-block">
             <p class="eyebrow">{{ activeMenu?.label ?? workspaceTitle }}</p>
             <h1>{{ activeTab?.label ?? workspaceTitle }}</h1>
-            <p class="hero-copy">当前页面围绕所选导航展示，避免整屏堆叠成长演示页。</p>
           </div>
           <div class="hero-status">
             <div class="status-card">
-              <span>当前账号</span>
-              <strong>{{ session?.displayName }}</strong>
-            </div>
-            <div class="status-card">
               <span>钱包余额</span>
-              <strong>{{ wallet.balance }}</strong>
+              <strong>¥ {{ wallet.balance }}</strong>
             </div>
             <div class="status-card">
-              <span>数据库</span>
-              <strong>{{ dbSummary }}</strong>
-            </div>
-            <div class="status-card">
-              <span>当前角色</span>
-              <strong>{{ session?.roleKey }}</strong>
+              <span>后端 / 数据库</span>
+              <strong>{{ healthStatus }} · {{ dbSummary }}</strong>
             </div>
           </div>
         </header>

@@ -1,5 +1,6 @@
 package com.chj.aigc.auth;
 
+import com.chj.aigc.auth.PlatformAuthService;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 import java.io.IOException;
@@ -14,9 +15,9 @@ public final class AuthInterceptor implements HandlerInterceptor {
     public static final String TOKEN_HEADER = "X-Auth-Token";
     public static final String REQUEST_SESSION_KEY = "currentSession";
 
-    private final AuthService authService;
+    private final PlatformAuthService authService;
 
-    public AuthInterceptor(AuthService authService) {
+    public AuthInterceptor(PlatformAuthService authService) {
         this.authService = authService;
     }
 

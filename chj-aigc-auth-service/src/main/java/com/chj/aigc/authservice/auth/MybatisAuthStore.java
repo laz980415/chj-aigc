@@ -5,6 +5,7 @@ import com.chj.aigc.authservice.persistence.mapper.AuthMapper;
 import java.sql.Timestamp;
 import java.time.Instant;
 import java.util.LinkedHashMap;
+import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 
@@ -21,6 +22,34 @@ public class MybatisAuthStore implements AuthStore {
     @Override
     public Optional<AuthUser> findUserByUsername(String username) {
         return Optional.ofNullable(authMapper.findUserByUsername(username)).map(this::mapUser);
+    }
+
+    @Override
+    public Optional<AuthUser> findUserById(String id) {
+        return Optional.ofNullable(authMapper.findUserById(id)).map(this::mapUser);
+    }
+
+    @Override
+    public List<AuthUser> listUsers() {
+        return authMapper.listUsers().stream().map(this::mapUser).toList();
+    }
+
+    @Override
+    public List<AuthUser> listUsersByTenantId(String tenantId) {
+        return authMapper.listUsersByTenantId(tenantId).stream().map(this::mapUser).toList();
+    }
+
+    @Override
+    public void saveUser(AuthUser user) {
+        Map<String, Object> payload = new LinkedHashMap<>();
+        payload.put("id", user.id());
+        payload.put("username", user.username());
+        payload.put("password", user.password());
+        payload.put("displayName", user.displayName());
+        payload.put("roleKey", user.roleKey());
+        payload.put("tenantId", user.tenantId());
+        payload.put("active", user.active());
+        authMapper.upsertUser(payload);
     }
 
     @Override

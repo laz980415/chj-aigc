@@ -5,6 +5,8 @@ import com.chj.aigc.auth.AuthService;
 import com.chj.aigc.auth.AuthStore;
 import com.chj.aigc.auth.InMemoryAuthStore;
 import com.chj.aigc.auth.MybatisAuthStore;
+import com.chj.aigc.auth.PlatformAuthService;
+import com.chj.aigc.auth.RemoteAuthService;
 import com.chj.aigc.access.ModelAccessPolicyEngine;
 import com.chj.aigc.access.ModelAccessAdminStore;
 import com.chj.aigc.access.InMemoryModelAccessAdminStore;
@@ -102,17 +104,18 @@ public class ApplicationConfig {
     }
 
     @Bean
-    public AuthStore authStore(ObjectProvider<AuthMapper> mapperProvider) {
-        AuthMapper mapper = mapperProvider.getIfAvailable();
-        if (mapper != null) {
-            return new MybatisAuthStore(mapper);
+    public PlatformAuthService authService(
+            @Value("${auth.service-uri:}") String authServiceUri,
+            ObjectProvider<AuthMapper> mapperProvider
+    ) {
+        // 优先使用远程认证服务，认证服务是 auth 表的唯一拥有者
+        if (authServiceUri != null && !authServiceUri.isBlank()) {
+            return new RemoteAuthService(authServiceUri);
         }
-        return new InMemoryAuthStore();
-    }
-
-    @Bean
-    public AuthService authService(AuthStore authStore) {
-        return new AuthService(authStore);
+        // 降级：本地 MyBatis 或内存存储（仅用于单机开发）
+        AuthMapper mapper = mapperProvider.getIfAvailable();
+        AuthStore store = mapper != null ? new MybatisAuthStore(mapper) : new InMemoryAuthStore();
+        return new AuthService(store);
     }
 
     @Bean
@@ -130,7 +133,7 @@ public class ApplicationConfig {
     }
 
     @Bean
-    public AuthInterceptor authInterceptor(AuthService authService) {
+    public AuthInterceptor authInterceptor(PlatformAuthService authService) {
         return new AuthInterceptor(authService);
     }
 

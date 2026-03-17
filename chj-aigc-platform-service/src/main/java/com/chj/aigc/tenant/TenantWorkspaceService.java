@@ -1,6 +1,6 @@
 package com.chj.aigc.tenant;
 
-import com.chj.aigc.auth.AuthService;
+import com.chj.aigc.auth.PlatformAuthService;
 import com.chj.aigc.auth.AuthUser;
 import java.util.List;
 
@@ -10,9 +10,9 @@ import java.util.List;
  */
 public final class TenantWorkspaceService {
     private final TenantProjectStore projectStore;
-    private final AuthService authService;
+    private final PlatformAuthService authService;
 
-    public TenantWorkspaceService(TenantProjectStore projectStore, AuthService authService) {
+    public TenantWorkspaceService(TenantProjectStore projectStore, PlatformAuthService authService) {
         this.projectStore = projectStore;
         this.authService = authService;
         seedIfNeeded("tenant-demo");

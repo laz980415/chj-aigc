@@ -1,0 +1,13 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(python3:*)",
+      "Bash(python:*)",
+      "Bash(npx playwright:*)",
+      "Bash(npm run:*)",
+      "Bash(node screenshot.mjs)",
+      "Bash(npm list:*)",
+      "Bash(npm install:*)"
+    ]
+  }
+}

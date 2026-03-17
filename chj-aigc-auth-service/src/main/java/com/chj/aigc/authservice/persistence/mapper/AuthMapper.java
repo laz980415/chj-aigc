@@ -1,6 +1,6 @@
 package com.chj.aigc.authservice.persistence.mapper;
 
-import com.chj.aigc.authservice.auth.AuthUser;
+import java.util.List;
 import java.util.Map;
 import org.apache.ibatis.annotations.Param;
 
@@ -9,6 +9,14 @@ import org.apache.ibatis.annotations.Param;
  */
 public interface AuthMapper {
     Map<String, Object> findUserByUsername(@Param("username") String username);
+
+    Map<String, Object> findUserById(@Param("id") String id);
+
+    List<Map<String, Object>> listUsers();
+
+    List<Map<String, Object>> listUsersByTenantId(@Param("tenantId") String tenantId);
+
+    void upsertUser(Map<String, Object> user);
 
     Map<String, Object> findSessionByToken(@Param("token") String token);
 

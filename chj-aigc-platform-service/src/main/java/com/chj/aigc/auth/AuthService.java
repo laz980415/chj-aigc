@@ -10,7 +10,7 @@ import java.util.UUID;
  * 负责平台登录、会话签发以及账号创建。
  * 当前系统同时服务平台超管和租户侧账号，因此这里统一维护账号和角色的基础能力。
  */
-public final class AuthService {
+public final class AuthService implements PlatformAuthService {
     private final AuthStore authStore;
 
     public AuthService(AuthStore authStore) {

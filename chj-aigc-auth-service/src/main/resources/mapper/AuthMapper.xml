@@ -3,8 +3,9 @@
         PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
         "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
 <mapper namespace="com.chj.aigc.authservice.persistence.mapper.AuthMapper">
+
     <select id="findUserByUsername" resultType="map">
-        select id as id, username as username, password as password,
+        select id, username, password,
                coalesce(display_name, username) as displayName,
                coalesce(role_key, 'tenant_member') as roleKey,
                tenant_id as tenantId,
@@ -13,8 +14,51 @@
         where username = #{username}
     </select>
 
+    <select id="findUserById" resultType="map">
+        select id, username, password,
+               coalesce(display_name, username) as displayName,
+               coalesce(role_key, 'tenant_member') as roleKey,
+               tenant_id as tenantId,
+               coalesce(active, true) as active
+        from auth_users
+        where id = #{id}
+    </select>
+
+    <select id="listUsers" resultType="map">
+        select id, username, password,
+               coalesce(display_name, username) as displayName,
+               coalesce(role_key, 'tenant_member') as roleKey,
+               tenant_id as tenantId,
+               coalesce(active, true) as active
+        from auth_users
+        order by id
+    </select>
+
+    <select id="listUsersByTenantId" resultType="map">
+        select id, username, password,
+               coalesce(display_name, username) as displayName,
+               coalesce(role_key, 'tenant_member') as roleKey,
+               tenant_id as tenantId,
+               coalesce(active, true) as active
+        from auth_users
+        where tenant_id = #{tenantId}
+        order by id
+    </select>
+
+    <insert id="upsertUser" parameterType="map">
+        insert into auth_users (id, username, password, display_name, role_key, tenant_id, active)
+        values (#{id}, #{username}, #{password}, #{displayName}, #{roleKey}, #{tenantId}, #{active})
+        on conflict (id) do update set
+            username     = excluded.username,
+            password     = excluded.password,
+            display_name = excluded.display_name,
+            role_key     = excluded.role_key,
+            tenant_id    = excluded.tenant_id,
+            active       = excluded.active
+    </insert>
+
     <select id="findSessionByToken" resultType="map">
-        select token as token, user_id as userId, username as username,
+        select token, user_id as userId, username,
                coalesce(display_name, username) as displayName,
                coalesce(role_key, 'tenant_member') as roleKey,
                tenant_id as tenantId, created_at as createdAt, expires_at as expiresAt
@@ -26,12 +70,12 @@
         insert into auth_sessions (token, user_id, username, display_name, role_key, tenant_id, created_at, expires_at)
         values (#{token}, #{userId}, #{username}, #{displayName}, #{roleKey}, #{tenantId}, #{createdAt}, #{expiresAt})
         on conflict (token) do update set
-            user_id = excluded.user_id,
-            username = excluded.username,
+            user_id      = excluded.user_id,
+            username     = excluded.username,
             display_name = excluded.display_name,
-            role_key = excluded.role_key,
-            tenant_id = excluded.tenant_id,
-            created_at = excluded.created_at,
-            expires_at = excluded.expires_at
+            role_key     = excluded.role_key,
+            tenant_id    = excluded.tenant_id,
+            created_at   = excluded.created_at,
+            expires_at   = excluded.expires_at
     </insert>
 </mapper>

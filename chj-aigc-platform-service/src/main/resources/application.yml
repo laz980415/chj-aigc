@@ -14,7 +14,7 @@ spring:
   datasource:
     url: ${PLATFORM_DB_URL:${APP_DB_URL:jdbc:postgresql://36.150.108.207:54312/chj-aigc}}
     username: ${PLATFORM_DB_USERNAME:${APP_DB_USERNAME:postgres}}
-    password: ${PLATFORM_DB_PASSWORD:${APP_DB_PASSWORD:}}
+    password: ${PLATFORM_DB_PASSWORD:${APP_DB_PASSWORD:Linten@2023!}}
     driver-class-name: org.postgresql.Driver
   sql:
     init:
@@ -28,3 +28,6 @@ mybatis-plus:
 logging:
   pattern:
     console: "%d{yyyy-MM-dd HH:mm:ss.SSS} [%thread] %-5level [%X{traceId:-no-trace}] %logger{36} - %msg%n"
+
+auth:
+  service-uri: ${AUTH_SERVICE_URI:http://127.0.0.1:8083}

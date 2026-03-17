@@ -6,7 +6,7 @@ import com.chj.aigc.access.ModelAccessEffect;
 import com.chj.aigc.access.ModelAccessAuditEvent;
 import com.chj.aigc.access.ModelAccessRule;
 import com.chj.aigc.access.ModelAccessScope;
-import com.chj.aigc.auth.AuthService;
+import com.chj.aigc.auth.PlatformAuthService;
 import com.chj.aigc.auth.AuthUser;
 import com.chj.aigc.billing.TenantBillingService;
 import com.chj.aigc.web.dto.CreateModelAccessRuleRequest;
@@ -31,10 +31,10 @@ import org.springframework.web.bind.annotation.RestController;
 @RequestMapping("/api/admin")
 public class AdminApiController {
     private final ModelAccessAdminStore store;
-    private final AuthService authService;
+    private final PlatformAuthService authService;
     private final TenantBillingService tenantBillingService;
 
-    public AdminApiController(ModelAccessAdminStore store, AuthService authService, TenantBillingService tenantBillingService) {
+    public AdminApiController(ModelAccessAdminStore store, PlatformAuthService authService, TenantBillingService tenantBillingService) {
         this.store = store;
         this.authService = authService;
         this.tenantBillingService = tenantBillingService;

@@ -14,7 +14,7 @@ spring:
   datasource:
     url: ${TENANT_DB_URL:${APP_DB_URL:jdbc:postgresql://36.150.108.207:54312/chj-aigc}}
     username: ${TENANT_DB_USERNAME:${APP_DB_USERNAME:postgres}}
-    password: ${TENANT_DB_PASSWORD:${APP_DB_PASSWORD:}}
+    password: ${TENANT_DB_PASSWORD:${APP_DB_PASSWORD:Linten@2023!}}
     driver-class-name: org.postgresql.Driver
   sql:
     init:
