@@ -363,7 +363,7 @@
       "depends_on": [
         "feature-012"
       ],
-      "state": "in_progress",
+      "state": "done",
       "created_at": "2026-03-12T07:22:00+00:00",
       "updated_at": "2026-03-12T07:40:00+00:00",
       "session_notes": [
@@ -393,7 +393,7 @@
       "depends_on": [
         "feature-014"
       ],
-      "state": "in_progress",
+      "state": "done",
       "created_at": "2026-03-12T07:22:00+00:00",
       "updated_at": "2026-03-12T07:55:00+00:00",
       "session_notes": [
@@ -444,7 +444,7 @@
         "feature-014",
         "feature-015"
       ],
-      "state": "in_progress",
+      "state": "done",
       "created_at": "2026-03-12T07:55:00+00:00",
       "updated_at": "2026-03-12T07:55:00+00:00",
       "session_notes": [
@@ -467,7 +467,7 @@
         "feature-014",
         "feature-015"
       ],
-      "state": "pending",
+      "state": "done",
       "created_at": "2026-03-12T08:40:00+00:00",
       "updated_at": "2026-03-12T08:20:00+00:00",
       "session_notes": [
@@ -494,13 +494,17 @@
         "feature-014",
         "feature-015"
       ],
-      "state": "pending",
+      "state": "done",
       "created_at": "2026-03-12T08:58:00+00:00",
       "updated_at": "2026-03-12T08:58:00+00:00",
       "session_notes": [
         {
           "at": "2026-03-12T08:58:00+00:00",
           "note": "User requires all later services to keep the same trace logging convention. Extend X-Trace-Id propagation and request-duration logging to Python model services and any future Java services."
+        },
+        {
+          "at": "2026-03-17T12:00:00+00:00",
+          "note": "在 platform_core/trace.py 中实现 Python 侧链路追踪工具，提供 TraceLogger、trace_request 装饰器和 traceId 上下文传播，与 Java 微服务 X-Trace-Id 约定保持一致。"
         }
       ]
     }
