@@ -92,3 +92,8 @@ Validation: Ran `python -m unittest tests.test_asset_ingestion tests.test_asset_
 Added a tenant-side semantic grounding abstraction so later generation integration can stay inside domain services instead of scattering ad hoc HTTP calls. New Java components include `AssetGroundingClient`, `RemoteAssetGroundingClient`, `TenantAssetGroundingService`, and a standalone `AssetGroundingConfig` that registers the remote client/service without editing the already-hot `ApplicationConfig`. This means future work on generation can inject a ready-made grounding service and focus only on orchestration decisions.
 
 Validation: Ran `mvn test "-Dtest=AssetUploadServiceTest,TenantAssetUploadControllerTest,RemoteAssetGroundingClientTest,TenantAssetGroundingServiceTest,AssetGroundingConfigTest"` with `JAVA_HOME=D:\ProgramFiles\jdk\jdk21`.
+
+## 2026-03-18T06:46:00+00:00 - feature-020 - Close tenant-service generation orchestration slice
+Validated and closed the tenant-service half of the generation pipeline in `backend-tenant-service`: generation job submission/query APIs, model-access check, remote model-gateway calls pinned to HTTP/1.1, settlement persistence, schema/mapper wiring, and the matching MVC regression tests. This slice is ready to be committed independently from the still-open Python/provider/admin/frontend sections.
+
+Validation: Ran `mvn test "-Dtest=GenerationControllerTest,TenantWorkspaceSmokeTest,HealthControllerTest"` with `JAVA_HOME=D:\ProgramFiles\jdk\jdk21`.

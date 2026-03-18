@@ -12,11 +12,19 @@ import com.chj.aigc.tenantservice.auth.LocalSessionLookupService;
 import com.chj.aigc.tenantservice.auth.MybatisAuthStore;
 import com.chj.aigc.tenantservice.auth.RemoteSessionLookupService;
 import com.chj.aigc.tenantservice.auth.SessionLookupService;
+import com.chj.aigc.tenantservice.generation.GenerationService;
+import com.chj.aigc.tenantservice.generation.GenerationStore;
+import com.chj.aigc.tenantservice.generation.ModelAccessClient;
+import com.chj.aigc.tenantservice.generation.ModelGatewayClient;
+import com.chj.aigc.tenantservice.generation.MybatisGenerationStore;
+import com.chj.aigc.tenantservice.generation.RemoteModelAccessClient;
+import com.chj.aigc.tenantservice.generation.RemoteModelGatewayClient;
 import com.chj.aigc.tenantservice.billing.MybatisTenantBillingStore;
 import com.chj.aigc.tenantservice.billing.TenantBillingService;
 import com.chj.aigc.tenantservice.billing.TenantBillingStore;
 import com.chj.aigc.tenantservice.persistence.mapper.AssetCatalogMapper;
 import com.chj.aigc.tenantservice.persistence.mapper.AuthMapper;
+import com.chj.aigc.tenantservice.persistence.mapper.GenerationMapper;
 import com.chj.aigc.tenantservice.persistence.mapper.TenantBillingMapper;
 import com.chj.aigc.tenantservice.persistence.mapper.TenantProjectMapper;
 import com.chj.aigc.tenantservice.tenant.MybatisTenantProjectStore;
@@ -136,6 +144,45 @@ public class ApplicationConfig {
     @Bean
     public TenantBillingService tenantBillingService(TenantBillingStore tenantBillingStore) {
         return new TenantBillingService(tenantBillingStore);
+    }
+
+    @Bean
+    public GenerationStore generationStore(GenerationMapper generationMapper) {
+        return new MybatisGenerationStore(generationMapper);
+    }
+
+    @Bean
+    public ModelAccessClient modelAccessClient(
+            @Value("${platform.internal.base-uri:http://127.0.0.1:8080}") String platformServiceUri
+    ) {
+        return new RemoteModelAccessClient(RestClient.builder().baseUrl(platformServiceUri).build());
+    }
+
+    @Bean
+    public ModelGatewayClient modelGatewayClient(
+            @Value("${model.service-uri:http://127.0.0.1:8084}") String modelServiceUri,
+            ObjectMapper objectMapper
+    ) {
+        return new RemoteModelGatewayClient(modelServiceUri, objectMapper);
+    }
+
+    @Bean
+    public GenerationService generationService(
+            GenerationStore generationStore,
+            TenantWorkspaceService tenantWorkspaceService,
+            TenantAssetCatalogService tenantAssetCatalogService,
+            TenantBillingService tenantBillingService,
+            ModelAccessClient modelAccessClient,
+            ModelGatewayClient modelGatewayClient
+    ) {
+        return new GenerationService(
+                generationStore,
+                tenantWorkspaceService,
+                tenantAssetCatalogService,
+                tenantBillingService,
+                modelAccessClient,
+                modelGatewayClient
+        );
     }
 
     @Bean

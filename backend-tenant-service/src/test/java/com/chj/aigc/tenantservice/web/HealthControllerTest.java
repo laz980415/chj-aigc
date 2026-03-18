@@ -15,7 +15,12 @@ import org.springframework.test.web.servlet.MockMvc;
 /**
  * 租户微服务基础冒烟测试。
  */
-@SpringBootTest(classes = TenantServiceApplication.class)
+@SpringBootTest(
+        classes = TenantServiceApplication.class,
+        properties = {
+                "auth.session-validation.mode=local"
+        }
+)
 @AutoConfigureMockMvc
 class HealthControllerTest {
     private static final String TRACE_HEADER = "X-Trace-Id";

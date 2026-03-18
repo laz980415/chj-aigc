@@ -34,7 +34,7 @@ public final class TenantBillingService {
     public Map<String, Object> quotaSnapshot(String tenantId) {
         Map<String, Object> payload = new LinkedHashMap<>();
         payload.put("projectImageRemaining", remaining(tenantId, QuotaScopeType.PROJECT, "project-demo", QuotaDimension.IMAGE_COUNT));
-        payload.put("userTokenRemaining", remaining(tenantId, QuotaScopeType.USER, "user-demo", QuotaDimension.TOKENS));
+        payload.put("userTokenRemaining", remaining(tenantId, QuotaScopeType.USER, "user-tenant-owner", QuotaDimension.TOKENS));
         return payload;
     }
 
@@ -125,6 +125,69 @@ public final class TenantBillingService {
         return quotaSnapshot(allocation.tenantId());
     }
 
+    /**
+     * 对已成功的生成任务执行额度扣减和钱包扣费。
+     */
+    public GenerationSettlement settleGeneration(
+            String jobId,
+            String tenantId,
+            String projectId,
+            String userId,
+            String capability,
+            Integer inputTokens,
+            Integer outputTokens,
+            Integer imageCount,
+            Integer videoSeconds
+    ) {
+        WalletLedgerEntry existingEntry = store.listLedgerEntries(tenantId).stream()
+                .filter(entry -> entry.type() == LedgerEntryType.CONSUMPTION)
+                .filter(entry -> jobId.equals(entry.referenceId()))
+                .findFirst()
+                .orElse(null);
+        int finalInputTokens = inputTokens != null ? inputTokens : 0;
+        int finalOutputTokens = outputTokens != null ? outputTokens : 0;
+        int finalImageCount = imageCount != null ? imageCount : 0;
+        int finalVideoSeconds = videoSeconds != null ? videoSeconds : 0;
+        if ("copywriting".equalsIgnoreCase(capability)) {
+            finalInputTokens = finalInputTokens > 0 ? finalInputTokens : 48;
+            finalOutputTokens = finalOutputTokens > 0 ? finalOutputTokens : 96;
+        } else if ("image_generation".equalsIgnoreCase(capability)) {
+            finalImageCount = finalImageCount > 0 ? finalImageCount : 1;
+        } else if ("video_generation".equalsIgnoreCase(capability)) {
+            finalVideoSeconds = finalVideoSeconds > 0 ? finalVideoSeconds : 10;
+        }
+
+        BigDecimal chargeAmount = calculateCharge(capability, finalInputTokens, finalOutputTokens, finalImageCount, finalVideoSeconds);
+        if (existingEntry != null) {
+            return new GenerationSettlement(
+                    existingEntry.amount().amount(),
+                    finalInputTokens,
+                    finalOutputTokens,
+                    finalImageCount,
+                    finalVideoSeconds
+            );
+        }
+
+        ensureQuotaAvailable(tenantId, new QuotaScope(QuotaScopeType.USER, userId), capability, finalInputTokens, finalOutputTokens, finalImageCount, finalVideoSeconds);
+        ensureQuotaAvailable(tenantId, new QuotaScope(QuotaScopeType.PROJECT, projectId), capability, finalInputTokens, finalOutputTokens, finalImageCount, finalVideoSeconds);
+        if (walletBalance(tenantId).compareTo(chargeAmount) < 0) {
+            throw new IllegalStateException("钱包余额不足，无法完成本次生成结算");
+        }
+
+        consumeQuotaIfPresent(tenantId, new QuotaScope(QuotaScopeType.USER, userId), capability, finalInputTokens, finalOutputTokens, finalImageCount, finalVideoSeconds);
+        consumeQuotaIfPresent(tenantId, new QuotaScope(QuotaScopeType.PROJECT, projectId), capability, finalInputTokens, finalOutputTokens, finalImageCount, finalVideoSeconds);
+        store.saveLedgerEntry(new WalletLedgerEntry(
+                "usage-" + jobId,
+                tenantId,
+                LedgerEntryType.CONSUMPTION,
+                new Money(chargeAmount),
+                "生成任务扣费：" + capability,
+                jobId,
+                Instant.now()
+        ));
+        return new GenerationSettlement(chargeAmount, finalInputTokens, finalOutputTokens, finalImageCount, finalVideoSeconds);
+    }
+
     private BigDecimal remaining(String tenantId, QuotaScopeType scopeType, String scopeId, QuotaDimension dimension) {
         return store.listQuotaAllocations(tenantId).stream()
                 .filter(item -> item.scope().scopeType() == scopeType)
@@ -142,6 +205,85 @@ public final class TenantBillingService {
                     case CONSUMPTION -> entry.amount().amount().negate();
                 })
                 .reduce(BigDecimal.ZERO, BigDecimal::add);
+    }
+
+    private void ensureQuotaAvailable(
+            String tenantId,
+            QuotaScope scope,
+            String capability,
+            int inputTokens,
+            int outputTokens,
+            int imageCount,
+            int videoSeconds
+    ) {
+        QuotaDimension dimension = quotaDimension(capability);
+        BigDecimal required = requiredAmount(capability, inputTokens, outputTokens, imageCount, videoSeconds);
+        QuotaAllocation allocation = findQuotaAllocation(tenantId, scope, dimension);
+        if (allocation != null && allocation.limit().subtract(allocation.used()).compareTo(required) < 0) {
+            throw new IllegalStateException("额度不足：" + scope.scopeType().name() + ":" + scope.scopeId() + ":" + dimension.name());
+        }
+    }
+
+    private void consumeQuotaIfPresent(
+            String tenantId,
+            QuotaScope scope,
+            String capability,
+            int inputTokens,
+            int outputTokens,
+            int imageCount,
+            int videoSeconds
+    ) {
+        QuotaDimension dimension = quotaDimension(capability);
+        BigDecimal required = requiredAmount(capability, inputTokens, outputTokens, imageCount, videoSeconds);
+        QuotaAllocation allocation = findQuotaAllocation(tenantId, scope, dimension);
+        if (allocation == null) {
+            return;
+        }
+        store.saveQuotaAllocation(new QuotaAllocation(
+                allocation.id(),
+                allocation.tenantId(),
+                allocation.scope(),
+                allocation.dimension(),
+                allocation.limit(),
+                allocation.used().add(required)
+        ));
+    }
+
+    private QuotaAllocation findQuotaAllocation(String tenantId, QuotaScope scope, QuotaDimension dimension) {
+        return store.listQuotaAllocations(tenantId).stream()
+                .filter(item -> item.scope().scopeType() == scope.scopeType())
+                .filter(item -> item.scope().scopeId().equals(scope.scopeId()))
+                .filter(item -> item.dimension() == dimension)
+                .findFirst()
+                .orElse(null);
+    }
+
+    private QuotaDimension quotaDimension(String capability) {
+        return switch (capability.toLowerCase()) {
+            case "copywriting" -> QuotaDimension.TOKENS;
+            case "image_generation" -> QuotaDimension.IMAGE_COUNT;
+            case "video_generation" -> QuotaDimension.VIDEO_SECONDS;
+            default -> throw new IllegalArgumentException("不支持的生成能力: " + capability);
+        };
+    }
+
+    private BigDecimal requiredAmount(String capability, int inputTokens, int outputTokens, int imageCount, int videoSeconds) {
+        return switch (capability.toLowerCase()) {
+            case "copywriting" -> new BigDecimal(inputTokens + outputTokens);
+            case "image_generation" -> new BigDecimal(imageCount);
+            case "video_generation" -> new BigDecimal(videoSeconds);
+            default -> throw new IllegalArgumentException("不支持的生成能力: " + capability);
+        };
+    }
+
+    private BigDecimal calculateCharge(String capability, int inputTokens, int outputTokens, int imageCount, int videoSeconds) {
+        BigDecimal charge = switch (capability.toLowerCase()) {
+            case "copywriting" -> new BigDecimal(inputTokens + outputTokens).multiply(new BigDecimal("0.0001"));
+            case "image_generation" -> new BigDecimal(imageCount).multiply(new BigDecimal("8.0000"));
+            case "video_generation" -> new BigDecimal(videoSeconds).multiply(new BigDecimal("1.5000"));
+            default -> throw new IllegalArgumentException("不支持的生成能力: " + capability);
+        };
+        return charge.setScale(4, java.math.RoundingMode.HALF_UP);
     }
 
     private Map<String, Object> serializePaymentOrder(PaymentOrder order) {
@@ -183,12 +325,37 @@ public final class TenantBillingService {
                 BigDecimal.ZERO
         ));
         store.saveQuotaAllocation(new QuotaAllocation(
-                "tenant-service-user-quota",
+                "tenant-service-project-video-quota",
                 tenantId,
-                new QuotaScope(QuotaScopeType.USER, "user-demo"),
+                new QuotaScope(QuotaScopeType.PROJECT, "project-demo"),
+                QuotaDimension.VIDEO_SECONDS,
+                new BigDecimal("120"),
+                BigDecimal.ZERO
+        ));
+        store.saveQuotaAllocation(new QuotaAllocation(
+                "tenant-service-owner-token-quota",
+                tenantId,
+                new QuotaScope(QuotaScopeType.USER, "user-tenant-owner"),
                 QuotaDimension.TOKENS,
                 new BigDecimal("50000"),
-                new BigDecimal("1200")
+                BigDecimal.ZERO
         ));
+        store.saveQuotaAllocation(new QuotaAllocation(
+                "tenant-service-member-token-quota",
+                tenantId,
+                new QuotaScope(QuotaScopeType.USER, "user-tenant-member"),
+                QuotaDimension.TOKENS,
+                new BigDecimal("50000"),
+                BigDecimal.ZERO
+        ));
+    }
+
+    public record GenerationSettlement(
+            BigDecimal chargeAmount,
+            Integer inputTokens,
+            Integer outputTokens,
+            Integer imageCount,
+            Integer videoSeconds
+    ) {
     }
 }

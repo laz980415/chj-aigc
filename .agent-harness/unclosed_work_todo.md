@@ -47,6 +47,11 @@ Validation target:
 
 ## Section B
 
+Status:
+
+- Closed on 2026-03-18 after validating `GenerationControllerTest`, `TenantWorkspaceSmokeTest`, and `HealthControllerTest` under JDK 21.
+- Keep the file list below as the commit boundary for the tenant-service generation orchestration slice.
+
 Feature guess: `feature-020` tenant-service generation orchestration and persistence.
 
 Files:

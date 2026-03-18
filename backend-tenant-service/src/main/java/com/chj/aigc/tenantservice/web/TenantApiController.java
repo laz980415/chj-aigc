@@ -14,11 +14,14 @@ import com.chj.aigc.tenantservice.billing.Money;
 import com.chj.aigc.tenantservice.billing.QuotaScope;
 import com.chj.aigc.tenantservice.billing.QuotaScopeType;
 import com.chj.aigc.tenantservice.billing.TenantBillingService;
+import com.chj.aigc.tenantservice.generation.GenerationJob;
+import com.chj.aigc.tenantservice.generation.GenerationService;
 import com.chj.aigc.tenantservice.tenant.TenantProject;
 import com.chj.aigc.tenantservice.tenant.TenantWorkspaceService;
 import com.chj.aigc.tenantservice.web.dto.CreateProjectRequest;
 import com.chj.aigc.tenantservice.web.dto.CreateBrandRequest;
 import com.chj.aigc.tenantservice.web.dto.CreateClientRequest;
+import com.chj.aigc.tenantservice.web.dto.CreateGenerationJobRequest;
 import com.chj.aigc.tenantservice.web.dto.CreatePaymentOrderRequest;
 import com.chj.aigc.tenantservice.web.dto.CreateTenantMemberRequest;
 import com.chj.aigc.tenantservice.web.dto.UpdateTenantMemberRoleRequest;
@@ -26,6 +29,7 @@ import com.chj.aigc.tenantservice.web.dto.UpdateTenantMemberStatusRequest;
 import com.chj.aigc.tenantservice.web.dto.UpsertQuotaRequest;
 import jakarta.servlet.http.HttpServletRequest;
 import java.math.BigDecimal;
+import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import org.springframework.http.HttpStatus;
@@ -47,17 +51,20 @@ public class TenantApiController {
     private final TenantBillingService tenantBillingService;
     private final AuthService authService;
     private final TenantAssetCatalogService tenantAssetCatalogService;
+    private final GenerationService generationService;
 
     public TenantApiController(
             TenantWorkspaceService tenantWorkspaceService,
             TenantBillingService tenantBillingService,
             AuthService authService,
-            TenantAssetCatalogService tenantAssetCatalogService
+            TenantAssetCatalogService tenantAssetCatalogService,
+            GenerationService generationService
     ) {
         this.tenantWorkspaceService = tenantWorkspaceService;
         this.tenantBillingService = tenantBillingService;
         this.authService = authService;
         this.tenantAssetCatalogService = tenantAssetCatalogService;
+        this.generationService = generationService;
     }
 
     @GetMapping("/projects")
@@ -147,6 +154,39 @@ public class TenantApiController {
     @GetMapping("/assets")
     public ApiResponse<List<Asset>> assets(HttpServletRequest request) {
         return ApiResponse.success(tenantAssetCatalogService.assets(resolveTenantId(request)));
+    }
+
+    @GetMapping("/generation/jobs")
+    public ApiResponse<List<Map<String, Object>>> generationJobs(HttpServletRequest request) {
+        return ApiResponse.success(generationService.listJobs(resolveTenantId(request)).stream()
+                .map(this::serializeGenerationJob)
+                .toList());
+    }
+
+    @PostMapping("/generation/jobs")
+    public ApiResponse<Map<String, Object>> submitGeneration(
+            @RequestBody CreateGenerationJobRequest request,
+            HttpServletRequest httpRequest
+    ) {
+        GenerationJob job = generationService.submit(
+                resolveTenantId(httpRequest),
+                currentSession(httpRequest),
+                new GenerationService.SubmitGenerationCommand(
+                        request.projectId(),
+                        request.modelAlias(),
+                        request.capability(),
+                        request.userPrompt(),
+                        request.brandId(),
+                        request.brandName(),
+                        request.brandSummary()
+                )
+        );
+        return ApiResponse.success(serializeGenerationJob(job));
+    }
+
+    @GetMapping("/generation/jobs/{jobId}")
+    public ApiResponse<Map<String, Object>> generationJob(@PathVariable String jobId, HttpServletRequest request) {
+        return ApiResponse.success(serializeGenerationJob(generationService.refresh(resolveTenantId(request), jobId)));
     }
 
     @PostMapping("/members")
@@ -247,5 +287,31 @@ public class TenantApiController {
                 "tenantId", user.tenantId(),
                 "active", user.active()
         );
+    }
+
+    private Map<String, Object> serializeGenerationJob(GenerationJob job) {
+        Map<String, Object> payload = new LinkedHashMap<>();
+        payload.put("job_id", job.id());
+        payload.put("project_id", job.projectId());
+        payload.put("model_alias", job.modelAlias());
+        payload.put("capability", job.capability().value());
+        payload.put("brand_id", job.brandId() == null ? "" : job.brandId());
+        payload.put("brand_name", job.brandName());
+        payload.put("status", job.status().value());
+        payload.put("output_text", job.outputText());
+        payload.put("output_uri", job.outputUri());
+        payload.put("error_message", job.errorMessage());
+        payload.put("provider_id", job.providerId());
+        payload.put("provider_model_name", job.providerModelName());
+        payload.put("provider_job_id", job.providerJobId());
+        payload.put("input_tokens", job.inputTokens());
+        payload.put("output_tokens", job.outputTokens());
+        payload.put("image_count", job.imageCount());
+        payload.put("video_seconds", job.videoSeconds());
+        payload.put("charge_amount", job.chargeAmount() == null ? null : job.chargeAmount().toPlainString());
+        payload.put("settled", job.settled());
+        payload.put("created_at", job.createdAt());
+        payload.put("updated_at", job.updatedAt());
+        return payload;
     }
 }

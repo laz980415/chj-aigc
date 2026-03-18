@@ -37,5 +37,12 @@ logging:
 
 auth:
   session-validation:
-    mode: ${AUTH_SESSION_VALIDATION_MODE:local}
+    mode: ${AUTH_SESSION_VALIDATION_MODE:remote}
     auth-service-uri: ${AUTH_SERVICE_URI:http://127.0.0.1:8083}
+
+platform:
+  internal:
+    base-uri: ${PLATFORM_SERVICE_URI:http://127.0.0.1:8080}
+
+model:
+  service-uri: ${MODEL_SERVICE_URI:http://127.0.0.1:8084}

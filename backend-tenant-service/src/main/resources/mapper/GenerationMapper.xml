@@ -1,0 +1,76 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper
+        PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+        "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.chj.aigc.tenantservice.persistence.mapper.GenerationMapper">
+    <select id="listJobs" resultType="map">
+        select id as id, tenant_id as tenantId, project_id as projectId, actor_id as actorId,
+               role_key as roleKey, model_alias as modelAlias, capability as capability, brand_id as brandId,
+               brand_name as brandName, brand_summary as brandSummary, client_name as clientName,
+               user_prompt as userPrompt, status as status, output_text as outputText,
+               output_uri as outputUri, error_message as errorMessage, provider_id as providerId,
+               provider_model_name as providerModelName, provider_job_id as providerJobId,
+               input_tokens as inputTokens, output_tokens as outputTokens, image_count as imageCount,
+               video_seconds as videoSeconds, charge_amount as chargeAmount, settled as settled,
+               created_at as createdAt, updated_at as updatedAt
+        from tenant_generation_jobs
+        where tenant_id = #{tenantId}
+        order by created_at desc
+    </select>
+
+    <select id="findJob" resultType="map">
+        select id as id, tenant_id as tenantId, project_id as projectId, actor_id as actorId,
+               role_key as roleKey, model_alias as modelAlias, capability as capability, brand_id as brandId,
+               brand_name as brandName, brand_summary as brandSummary, client_name as clientName,
+               user_prompt as userPrompt, status as status, output_text as outputText,
+               output_uri as outputUri, error_message as errorMessage, provider_id as providerId,
+               provider_model_name as providerModelName, provider_job_id as providerJobId,
+               input_tokens as inputTokens, output_tokens as outputTokens, image_count as imageCount,
+               video_seconds as videoSeconds, charge_amount as chargeAmount, settled as settled,
+               created_at as createdAt, updated_at as updatedAt
+        from tenant_generation_jobs
+        where id = #{jobId}
+    </select>
+
+    <insert id="upsertJob" parameterType="map">
+        insert into tenant_generation_jobs (
+            id, tenant_id, project_id, actor_id, role_key, model_alias, capability, brand_id, brand_name,
+            brand_summary, client_name, user_prompt, status, output_text, output_uri, error_message,
+            provider_id, provider_model_name, provider_job_id, input_tokens, output_tokens, image_count,
+            video_seconds, charge_amount, settled, created_at, updated_at
+        )
+        values (
+            #{id}, #{tenantId}, #{projectId}, #{actorId}, #{roleKey}, #{modelAlias}, #{capability}, #{brandId}, #{brandName},
+            #{brandSummary}, #{clientName}, #{userPrompt}, #{status}, #{outputText}, #{outputUri}, #{errorMessage},
+            #{providerId}, #{providerModelName}, #{providerJobId}, #{inputTokens}, #{outputTokens}, #{imageCount},
+            #{videoSeconds}, #{chargeAmount}, #{settled}, #{createdAt}, #{updatedAt}
+        )
+        on conflict (id) do update set
+            tenant_id = excluded.tenant_id,
+            project_id = excluded.project_id,
+            actor_id = excluded.actor_id,
+            role_key = excluded.role_key,
+            model_alias = excluded.model_alias,
+            capability = excluded.capability,
+            brand_id = excluded.brand_id,
+            brand_name = excluded.brand_name,
+            brand_summary = excluded.brand_summary,
+            client_name = excluded.client_name,
+            user_prompt = excluded.user_prompt,
+            status = excluded.status,
+            output_text = excluded.output_text,
+            output_uri = excluded.output_uri,
+            error_message = excluded.error_message,
+            provider_id = excluded.provider_id,
+            provider_model_name = excluded.provider_model_name,
+            provider_job_id = excluded.provider_job_id,
+            input_tokens = excluded.input_tokens,
+            output_tokens = excluded.output_tokens,
+            image_count = excluded.image_count,
+            video_seconds = excluded.video_seconds,
+            charge_amount = excluded.charge_amount,
+            settled = excluded.settled,
+            created_at = excluded.created_at,
+            updated_at = excluded.updated_at
+    </insert>
+</mapper>

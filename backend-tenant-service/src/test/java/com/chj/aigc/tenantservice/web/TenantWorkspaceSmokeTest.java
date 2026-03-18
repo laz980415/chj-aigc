@@ -17,7 +17,12 @@ import org.springframework.test.web.servlet.MockMvc;
 /**
  * 覆盖租户工作台关键链路：登录、项目、成员、额度。
  */
-@SpringBootTest(classes = TenantServiceApplication.class)
+@SpringBootTest(
+        classes = TenantServiceApplication.class,
+        properties = {
+                "auth.session-validation.mode=local"
+        }
+)
 @AutoConfigureMockMvc
 class TenantWorkspaceSmokeTest {
     @Autowired

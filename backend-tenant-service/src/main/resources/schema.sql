@@ -196,3 +196,61 @@ alter table if exists tenant_assets add column if not exists active boolean defa
 alter table if exists tenant_assets add column if not exists tags varchar(255);
 update tenant_assets set active = coalesce(active, true);
 alter table if exists tenant_assets alter column active set not null;
+
+create table if not exists tenant_generation_jobs (
+    id varchar(64) primary key,
+    tenant_id varchar(64) not null,
+    project_id varchar(64) not null,
+    actor_id varchar(64) not null,
+    role_key varchar(64) not null,
+    model_alias varchar(128) not null,
+    capability varchar(64) not null,
+    brand_id varchar(64),
+    brand_name varchar(128) not null,
+    brand_summary varchar(255) not null default '',
+    client_name varchar(128) not null,
+    user_prompt text not null,
+    status varchar(32) not null,
+    output_text text,
+    output_uri text,
+    error_message text,
+    provider_id varchar(64),
+    provider_model_name varchar(128),
+    provider_job_id varchar(128),
+    input_tokens integer,
+    output_tokens integer,
+    image_count integer,
+    video_seconds integer,
+    charge_amount numeric(18, 4),
+    settled boolean not null default false,
+    created_at timestamp not null,
+    updated_at timestamp not null
+);
+comment on table tenant_generation_jobs is '租户生成任务表';
+comment on column tenant_generation_jobs.id is '生成任务主键';
+comment on column tenant_generation_jobs.tenant_id is '所属租户标识';
+comment on column tenant_generation_jobs.project_id is '所属项目标识';
+comment on column tenant_generation_jobs.actor_id is '发起人标识';
+comment on column tenant_generation_jobs.role_key is '发起人角色';
+comment on column tenant_generation_jobs.model_alias is '平台模型别名';
+comment on column tenant_generation_jobs.capability is '生成能力';
+comment on column tenant_generation_jobs.brand_id is '品牌标识';
+comment on column tenant_generation_jobs.brand_name is '品牌名称';
+comment on column tenant_generation_jobs.brand_summary is '品牌摘要';
+comment on column tenant_generation_jobs.client_name is '客户名称';
+comment on column tenant_generation_jobs.user_prompt is '原始用户提示词';
+comment on column tenant_generation_jobs.status is '任务状态';
+comment on column tenant_generation_jobs.output_text is '文本输出';
+comment on column tenant_generation_jobs.output_uri is '生成物地址';
+comment on column tenant_generation_jobs.error_message is '错误信息';
+comment on column tenant_generation_jobs.provider_id is '实际供应商标识';
+comment on column tenant_generation_jobs.provider_model_name is '实际供应商模型名';
+comment on column tenant_generation_jobs.provider_job_id is '供应商任务标识';
+comment on column tenant_generation_jobs.input_tokens is '输入 token 数';
+comment on column tenant_generation_jobs.output_tokens is '输出 token 数';
+comment on column tenant_generation_jobs.image_count is '图片数量';
+comment on column tenant_generation_jobs.video_seconds is '视频秒数';
+comment on column tenant_generation_jobs.charge_amount is '扣费金额';
+comment on column tenant_generation_jobs.settled is '是否已完成结算';
+comment on column tenant_generation_jobs.created_at is '创建时间';
+comment on column tenant_generation_jobs.updated_at is '更新时间';
