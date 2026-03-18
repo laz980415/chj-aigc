@@ -7,7 +7,7 @@ spring:
   cloud:
     nacos:
       discovery:
-        enabled: ${NACOS_DISCOVERY_ENABLED:true}
+        enabled: ${NACOS_DISCOVERY_ENABLED:false}
         server-addr: ${NACOS_SERVER_ADDR:127.0.0.1:8848}
   datasource:
     url: ${AUTH_DB_URL:${APP_DB_URL:jdbc:postgresql://36.150.108.207:54312/chj-aigc-auth}}
