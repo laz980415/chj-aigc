@@ -123,6 +123,11 @@ Suggested close-out:
 
 ## Section D
 
+Status:
+
+- Product code closed on 2026-03-18: `frontend-admin/src/App.vue` was validated with `npm run build`.
+- `frontend-admin/screenshot.mjs` and `frontend-admin/screenshot-login.png` are still local debug artifacts and should stay out of the product-code commit unless someone explicitly wants a dedicated UI verification commit.
+
 Feature guess: frontend admin or tenant workbench follow-up.
 
 Files:

@@ -97,3 +97,8 @@ Validation: Ran `mvn test "-Dtest=AssetUploadServiceTest,TenantAssetUploadContro
 Validated and closed the tenant-service half of the generation pipeline in `backend-tenant-service`: generation job submission/query APIs, model-access check, remote model-gateway calls pinned to HTTP/1.1, settlement persistence, schema/mapper wiring, and the matching MVC regression tests. This slice is ready to be committed independently from the still-open Python/provider/admin/frontend sections.
 
 Validation: Ran `mvn test "-Dtest=GenerationControllerTest,TenantWorkspaceSmokeTest,HealthControllerTest"` with `JAVA_HOME=D:\ProgramFiles\jdk\jdk21`.
+
+## 2026-03-18T07:00:00+00:00 - feature-024 - Wire tenant workbench UI to tenant generation APIs
+Closed the product-code part of the frontend workbench slice in `frontend-admin/src/App.vue`: the generation form now targets tenant-service generation endpoints, carries project/brand context, syncs capability-specific model aliases, and shows settlement fields such as charge amount in the task result list. The local screenshot helper files were intentionally left out of the product commit because they are debug/verification artifacts, not runtime code.
+
+Validation: Ran `npm run build` in `frontend-admin`.

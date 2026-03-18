@@ -144,10 +144,18 @@ type ApiResponse<T> = {
 
 type GenerationJobPayload = {
   job_id: string;
+  project_id?: string;
+  model_alias?: string;
+  capability?: string;
+  brand_id?: string;
   status: string;
   output_text: string;
   output_uri: string;
   error_message: string;
+  provider_id?: string;
+  provider_model_name?: string;
+  provider_job_id?: string;
+  charge_amount?: string | null;
 };
 
 type WorkspaceTab = {
@@ -194,6 +202,8 @@ const memberRoleDrafts = reactive<Record<string, string>>({});
 const generationJobs = ref<GenerationJobPayload[]>([]);
 
 const generationForm = reactive({
+  project_id: "project-demo",
+  brand_id: "brand-demo",
   model_alias: "copy-standard",
   capability: "copywriting",
   raw_prompt: "",
@@ -415,6 +425,7 @@ async function loadDashboard() {
   clients.value = [];
   brands.value = [];
   assets.value = [];
+  generationJobs.value = [];
 
   const [health, dbPayload] = await Promise.all([
     fetchJson<{ status: string }>("/api/health"),
@@ -448,7 +459,7 @@ async function loadDashboard() {
   }
 
   if (canViewTenantWorkspace.value) {
-    const [walletPayload, quotaPayload, quotaAllocationPayload, paymentOrderPayload, projectPayload, memberPayload, clientPayload, brandPayload, assetPayload] = await Promise.all([
+    const [walletPayload, quotaPayload, quotaAllocationPayload, paymentOrderPayload, projectPayload, memberPayload, clientPayload, brandPayload, assetPayload, generationPayload] = await Promise.all([
       fetchJson<WalletPayload>("/api/tenant/wallet"),
       fetchJson<QuotaPayload>("/api/tenant/quotas"),
       fetchJson<QuotaAllocationPayload[]>("/api/tenant/quota-allocations"),
@@ -458,6 +469,7 @@ async function loadDashboard() {
       fetchJson<ClientPayload[]>("/api/tenant/clients"),
       fetchJson<BrandPayload[]>("/api/tenant/brands"),
       fetchJson<AssetPayload[]>("/api/tenant/assets"),
+      fetchJson<GenerationJobPayload[]>("/api/tenant/generation/jobs"),
     ]);
     wallet.value = walletPayload;
     quotas.value = quotaPayload;
@@ -468,10 +480,12 @@ async function loadDashboard() {
     clients.value = clientPayload;
     brands.value = brandPayload;
     assets.value = assetPayload;
+    generationJobs.value = generationPayload;
   }
 
   syncMemberRoleDrafts();
   syncQuotaScope();
+  syncGenerationForm();
   syncWorkspaceNavigation();
   loading.value = false;
 }
@@ -756,18 +770,17 @@ async function createBrand() {
 async function submitGeneration() {
   success.value = "";
   error.value = "";
-  const result = await fetchJson<GenerationJobPayload>("/api/model/jobs", {
+  const result = await fetchJson<GenerationJobPayload>("/api/tenant/generation/jobs", {
     method: "POST",
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify({
-      tenant_id: session.value?.tenantId ?? "unknown",
-      project_id: projects.value[0]?.id ?? "default",
-      actor_id: session.value?.userId ?? "unknown",
-      model_alias: generationForm.model_alias,
+      projectId: generationForm.project_id,
+      modelAlias: generationForm.model_alias,
       capability: generationForm.capability,
-      raw_prompt: generationForm.raw_prompt,
-      brand_name: generationForm.brand_name || undefined,
-      brand_summary: generationForm.brand_summary || undefined,
+      userPrompt: generationForm.raw_prompt,
+      brandId: generationForm.brand_id || undefined,
+      brandName: generationForm.brand_name || undefined,
+      brandSummary: generationForm.brand_summary || undefined,
     }),
   });
   generationJobs.value.unshift(result);
@@ -776,7 +789,7 @@ async function submitGeneration() {
 
 // 刷新单个生成任务状态（用于异步视频任务轮询）。
 async function refreshJob(jobId: string) {
-  const result = await fetchJson<GenerationJobPayload>(`/api/model/jobs/${jobId}`);
+  const result = await fetchJson<GenerationJobPayload>(`/api/tenant/generation/jobs/${jobId}`);
   const idx = generationJobs.value.findIndex((j) => j.job_id === jobId);
   if (idx >= 0) {
     generationJobs.value[idx] = result;
@@ -799,6 +812,27 @@ function syncQuotaScope() {
   }
   if (!options.some((option) => option.value === quotaForm.scopeId)) {
     quotaForm.scopeId = options[0]!.value;
+  }
+}
+
+function syncGenerationForm() {
+  if (projects.value.length > 0 && !projects.value.some((project) => project.id === generationForm.project_id)) {
+    generationForm.project_id = projects.value[0]!.id;
+  }
+  if (brands.value.length > 0 && !brands.value.some((brand) => brand.id === generationForm.brand_id)) {
+    generationForm.brand_id = brands.value[0]!.id;
+  }
+  if (generationForm.capability === "copywriting") {
+    generationForm.model_alias = "copy-standard";
+  } else if (generationForm.capability === "image_generation") {
+    generationForm.model_alias = "image-standard";
+  } else if (generationForm.capability === "video_generation") {
+    generationForm.model_alias = "video-standard";
+  }
+  const selectedBrand = brands.value.find((brand) => brand.id === generationForm.brand_id);
+  if (selectedBrand) {
+    generationForm.brand_name = selectedBrand.name;
+    generationForm.brand_summary = selectedBrand.summary;
   }
 }
 
@@ -1519,7 +1553,6 @@ onBeforeUnmount(() => {
           </div>
         </div>
       </section>
-      </section>
 
       <section v-if="canViewTenantWorkspace" v-show="activeTabKey === 'generation'" class="panel">
         <div class="panel-head">
@@ -1530,10 +1563,17 @@ onBeforeUnmount(() => {
         </div>
         <form class="form-stack" @submit.prevent="runAction(submitGeneration)">
           <div class="form-grid">
-            <select v-model="generationForm.capability">
+            <select v-model="generationForm.capability" @change="syncGenerationForm">
               <option value="copywriting">文案生成</option>
-              <option value="image">图片生成</option>
-              <option value="video">视频生成（异步）</option>
+              <option value="image_generation">图片生成</option>
+              <option value="video_generation">视频生成（异步）</option>
+            </select>
+            <select v-model="generationForm.project_id">
+              <option v-for="project in projects" :key="project.id" :value="project.id">{{ project.name }}</option>
+            </select>
+            <select v-model="generationForm.brand_id" @change="syncGenerationForm">
+              <option value="">默认品牌</option>
+              <option v-for="brand in brands" :key="brand.id" :value="brand.id">{{ brand.name }}</option>
             </select>
             <input v-model="generationForm.model_alias" placeholder="模型别名，如 copy-standard" required>
             <input v-model="generationForm.brand_name" placeholder="品牌名称（可选）">
@@ -1572,6 +1612,7 @@ onBeforeUnmount(() => {
             </div>
             <div v-if="job.output_text" class="subtext" style="white-space: pre-wrap; margin-top: 4px;">{{ job.output_text }}</div>
             <div v-if="job.output_uri" class="subtext">素材地址：{{ job.output_uri }}</div>
+            <div v-if="job.charge_amount" class="subtext">扣费：{{ job.charge_amount }}</div>
             <div v-if="job.error_message" class="subtext" style="color: var(--color-danger);">错误：{{ job.error_message }}</div>
           </li>
         </ul>
