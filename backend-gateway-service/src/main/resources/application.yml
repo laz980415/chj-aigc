@@ -13,6 +13,10 @@ spring:
         group: ${NACOS_GROUP:DEFAULT_GROUP}
     gateway:
       routes:
+        - id: model-service-api
+          uri: ${MODEL_SERVICE_URI:http://127.0.0.1:8084}
+          predicates:
+            - Path=/api/model/**
         - id: tenant-auth-api
           uri: ${AUTH_SERVICE_URI:http://127.0.0.1:8083}
           predicates:

@@ -78,12 +78,24 @@ services:
       AUTH_SERVICE_URI: http://auth-service:8083
       PLATFORM_SERVICE_URI: http://platform-service:8080
       TENANT_SERVICE_URI: http://tenant-service:8082
+      MODEL_SERVICE_URI: http://model-service:8084
     ports:
       - "8081:8081"
     depends_on:
       - auth-service
       - platform-service
       - tenant-service
+
+  model-service:
+    build:
+      context: .
+      dockerfile: backend-model-service/Dockerfile
+    environment:
+      MODEL_SERVICE_PORT: "8084"
+    ports:
+      - "8084:8084"
+    depends_on:
+      - auth-service
 
   frontend:
     build:
