@@ -59,3 +59,13 @@ Validation: Ran mvn test and python -m unittest discover -s tests -v; observabil
 Expanded the V1 roadmap into a concrete delivery plan with milestone slices, demo scenarios, release recommendations, and an explicit next-phase shift from domain modeling to Spring Boot APIs and a first visible admin UI.
 
 Validation: Validated the harness state with python harness.py doctor and reviewed that the roadmap now maps completed core features to a user-visible delivery sequence.
+
+## 2026-03-18T05:00:00+00:00 - feature-020 - Validate end-to-end generation pipeline slices
+Validated the tenant-service generation path with Java 21 (`GenerationControllerTest`, `TenantWorkspaceSmokeTest`, `HealthControllerTest`) after overriding a stale local `JAVA_HOME` that still pointed to JDK 8. Added Python-side regression coverage for `backend-model-service` job routing and `OpenAIProviderAdapter` fallback/configured branches in new root tests to keep future edits off the hot files already being changed elsewhere.
+
+Validation: Ran `python -m unittest tests.test_model_service_router tests.test_openai_adapter -v` and `mvn test "-Dtest=GenerationControllerTest,TenantWorkspaceSmokeTest,HealthControllerTest"` with `JAVA_HOME=D:\ProgramFiles\jdk\jdk21`.
+
+## 2026-03-18T05:10:00+00:00 - feature-021 - Add backend audit event query slice
+Added a disjoint backend-only slice for audit log querying in platform service: new `GET /api/admin/audit-events` controller plus a read-only query service that supports `tenantId`, `eventType`, `startAt`, `endAt`, `page`, and `pageSize`. The current tenant filter is explicitly derived only from tenant-scoped audit events because the persisted audit record does not yet store a dedicated tenant column. Frontend work remains unclaimed because `frontend-admin/src/App.vue` is already being edited elsewhere.
+
+Validation: Ran `mvn test "-Dtest=AdminAuditQueryControllerTest"` with `JAVA_HOME=D:\ProgramFiles\jdk\jdk21`.
