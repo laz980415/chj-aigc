@@ -3,6 +3,8 @@ param(
     [string]$LogFile = ""
 )
 
+. "$PSScriptRoot\use-java21.ps1"
+
 $env:NACOS_DISCOVERY_ENABLED = "true"
 $env:NACOS_SERVER_ADDR = $NacosServer
 

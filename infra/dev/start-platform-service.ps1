@@ -6,6 +6,8 @@ param(
     [string]$LogFile = ""
 )
 
+. "$PSScriptRoot\use-java21.ps1"
+
 $env:PLATFORM_DB_URL = $DbUrl
 $env:PLATFORM_DB_USERNAME = $DbUsername
 $env:PLATFORM_DB_PASSWORD = $DbPassword
