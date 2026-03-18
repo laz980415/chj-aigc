@@ -4,9 +4,10 @@
 """
 
 from fastapi import FastAPI
-from .routers import generation, health
+from .routers import assets, generation, health
 
 app = FastAPI(title="CHJ AIGC 模型网关", version="1.0.0")
 
 app.include_router(health.router)
 app.include_router(generation.router, prefix="/api/model")
+app.include_router(assets.router, prefix="/api/model")

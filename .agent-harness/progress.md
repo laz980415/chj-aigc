@@ -69,3 +69,26 @@ Validation: Ran `python -m unittest tests.test_model_service_router tests.test_o
 Added a disjoint backend-only slice for audit log querying in platform service: new `GET /api/admin/audit-events` controller plus a read-only query service that supports `tenantId`, `eventType`, `startAt`, `endAt`, `page`, and `pageSize`. The current tenant filter is explicitly derived only from tenant-scoped audit events because the persisted audit record does not yet store a dedicated tenant column. Frontend work remains unclaimed because `frontend-admin/src/App.vue` is already being edited elsewhere.
 
 Validation: Ran `mvn test "-Dtest=AdminAuditQueryControllerTest"` with `JAVA_HOME=D:\ProgramFiles\jdk\jdk21`.
+
+## 2026-03-18T05:20:00+00:00 - feature-022 - Storage note before asset upload implementation
+Confirmed the current implementation target remains local-disk raw file storage to match the existing acceptance criteria. Important handoff note: treat local disk only as the current delivery slice, not the long-term architecture. Uploaded source files should stay behind a storage abstraction so they can be migrated later to COS or another object store when asset volume grows beyond single-machine capacity. Parsed chunks and embeddings should still be modeled independently from raw file storage so the future switch only changes source object persistence, not chunk indexing contracts.
+
+## 2026-03-18T05:30:00+00:00 - feature-022 - Add backend asset upload entry slice
+Added a backend-only upload slice in tenant service without touching the hot workspace controller file set: `POST /api/tenant/assets/upload` now lands files on local disk, infers or accepts asset kind, validates tenant project/brand ownership, persists asset metadata, and calls a dedicated ingestion abstraction. The current ingestion implementation is intentionally `NoOp` so later agents can plug in document chunking, embeddings, and ES indexing behind the same interface. Raw file storage is already isolated inside the upload service so future migration to COS/object storage should not require changing the controller contract.
+
+Validation: Ran `mvn test "-Dtest=AssetUploadServiceTest,TenantAssetUploadControllerTest"` with `JAVA_HOME=D:\ProgramFiles\jdk\jdk21`.
+
+## 2026-03-18T05:45:00+00:00 - feature-022 - Add Python parsing and vector-index slices
+Added a model-service-side parsing/indexing module behind stable abstractions: parser registry, deterministic embedding provider, chunk index interface, semantic retriever, JSONL development index, and Elasticsearch-backed index implementation. Also exposed independent model-gateway endpoints for `POST /api/model/assets/ingest` and `POST /api/model/assets/search`. On the tenant side, a remote ingestion pipeline bean can now be enabled with `tenant.asset-upload.ingestion.mode=remote`; otherwise upload still falls back to `NoOp` ingestion so local development remains non-blocking when the model service is not running.
+
+Validation: Ran `python -m unittest tests.test_asset_ingestion tests.test_asset_ingestion_router -v` and `mvn test "-Dtest=AssetUploadServiceTest,TenantAssetUploadControllerTest"` with `JAVA_HOME=D:\ProgramFiles\jdk\jdk21`.
+
+## 2026-03-18T05:55:00+00:00 - feature-022 - Add semantic grounding retrieval slice
+Added a dedicated semantic grounding service in model service so brand grounding no longer depends only on coarse asset metadata. New endpoint `POST /api/model/assets/grounding-context` retrieves top semantic chunks for the selected asset set and returns structured snippets that can be merged into prompt assembly later without changing the retrieval contract. This slice is intentionally isolated from `generation.py`, which is currently being edited elsewhere, so later integration should happen by calling the new grounding service instead of re-implementing retrieval logic inside the generation router.
+
+Validation: Ran `python -m unittest tests.test_asset_ingestion tests.test_asset_ingestion_router tests.test_asset_grounding -v`.
+
+## 2026-03-18T06:05:00+00:00 - feature-022 - Add tenant-side grounding client and service wiring
+Added a tenant-side semantic grounding abstraction so later generation integration can stay inside domain services instead of scattering ad hoc HTTP calls. New Java components include `AssetGroundingClient`, `RemoteAssetGroundingClient`, `TenantAssetGroundingService`, and a standalone `AssetGroundingConfig` that registers the remote client/service without editing the already-hot `ApplicationConfig`. This means future work on generation can inject a ready-made grounding service and focus only on orchestration decisions.
+
+Validation: Ran `mvn test "-Dtest=AssetUploadServiceTest,TenantAssetUploadControllerTest,RemoteAssetGroundingClientTest,TenantAssetGroundingServiceTest,AssetGroundingConfigTest"` with `JAVA_HOME=D:\ProgramFiles\jdk\jdk21`.
