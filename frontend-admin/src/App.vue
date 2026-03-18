@@ -142,6 +142,14 @@ type ApiResponse<T> = {
   data: T;
 };
 
+type GenerationJobPayload = {
+  job_id: string;
+  status: string;
+  output_text: string;
+  output_uri: string;
+  error_message: string;
+};
+
 type WorkspaceTab = {
   key: string;
   label: string;
@@ -183,6 +191,15 @@ const users = ref<UserPayload[]>([]);
 const members = ref<UserPayload[]>([]);
 const roles = ref<string[]>([]);
 const memberRoleDrafts = reactive<Record<string, string>>({});
+const generationJobs = ref<GenerationJobPayload[]>([]);
+
+const generationForm = reactive({
+  model_alias: "copy-standard",
+  capability: "copywriting",
+  raw_prompt: "",
+  brand_name: "",
+  brand_summary: "",
+});
 
 const loginForm = reactive({
   username: "admin",
@@ -331,6 +348,16 @@ const workspaceMenus = computed<WorkspaceMenu[]>(() => isPlatformAdmin.value
       badge: String(brands.value.length),
       tabs: [
         { key: "assets", label: "客户素材" },
+      ],
+    },
+    {
+      key: "tenant-workbench",
+      label: "创作工作台",
+      icon: "✨",
+      badge: String(generationJobs.value.length),
+      tabs: [
+        { key: "generation", label: "提交任务" },
+        { key: "generation-results", label: "任务结果" },
       ],
     },
   ]);
@@ -725,7 +752,36 @@ async function createBrand() {
   await loadDashboard();
 }
 
-// 所有按钮动作统一走这一层，避免页面逻辑分散处理异常。
+// 提交生成任务到模型网关服务。
+async function submitGeneration() {
+  success.value = "";
+  error.value = "";
+  const result = await fetchJson<GenerationJobPayload>("/api/model/jobs", {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({
+      tenant_id: session.value?.tenantId ?? "unknown",
+      project_id: projects.value[0]?.id ?? "default",
+      actor_id: session.value?.userId ?? "unknown",
+      model_alias: generationForm.model_alias,
+      capability: generationForm.capability,
+      raw_prompt: generationForm.raw_prompt,
+      brand_name: generationForm.brand_name || undefined,
+      brand_summary: generationForm.brand_summary || undefined,
+    }),
+  });
+  generationJobs.value.unshift(result);
+  success.value = `任务 ${result.job_id} 已提交，状态：${result.status}`;
+}
+
+// 刷新单个生成任务状态（用于异步视频任务轮询）。
+async function refreshJob(jobId: string) {
+  const result = await fetchJson<GenerationJobPayload>(`/api/model/jobs/${jobId}`);
+  const idx = generationJobs.value.findIndex((j) => j.job_id === jobId);
+  if (idx >= 0) {
+    generationJobs.value[idx] = result;
+  }
+}
 async function runAction(action: () => Promise<void>) {
   try {
     await action();
@@ -1462,6 +1518,63 @@ onBeforeUnmount(() => {
             </ul>
           </div>
         </div>
+      </section>
+      </section>
+
+      <section v-if="canViewTenantWorkspace" v-show="activeTabKey === 'generation'" class="panel">
+        <div class="panel-head">
+          <div>
+            <p class="panel-label">创作工作台</p>
+            <h2>提交生成任务</h2>
+          </div>
+        </div>
+        <form class="form-stack" @submit.prevent="runAction(submitGeneration)">
+          <div class="form-grid">
+            <select v-model="generationForm.capability">
+              <option value="copywriting">文案生成</option>
+              <option value="image">图片生成</option>
+              <option value="video">视频生成（异步）</option>
+            </select>
+            <input v-model="generationForm.model_alias" placeholder="模型别名，如 copy-standard" required>
+            <input v-model="generationForm.brand_name" placeholder="品牌名称（可选）">
+            <input v-model="generationForm.brand_summary" placeholder="品牌简介（可选）">
+          </div>
+          <textarea
+            v-model="generationForm.raw_prompt"
+            placeholder="输入创作提示词..."
+            rows="4"
+            required
+            style="resize: vertical;"
+          ></textarea>
+          <button class="action-button" type="submit">提交任务</button>
+        </form>
+      </section>
+
+      <section v-if="canViewTenantWorkspace" v-show="activeTabKey === 'generation-results'" class="panel panel-wide">
+        <div class="panel-head">
+          <div>
+            <p class="panel-label">创作工作台</p>
+            <h2>任务结果</h2>
+          </div>
+        </div>
+        <div v-if="generationJobs.length === 0" class="subtext">暂无任务，请先提交生成任务。</div>
+        <ul v-else class="card-list">
+          <li v-for="job in generationJobs" :key="job.job_id">
+            <div class="inline-actions">
+              <strong>{{ job.job_id.slice(0, 8) }}...</strong>
+              <span class="subtext">{{ job.status }}</span>
+              <button
+                v-if="job.status === 'pending' || job.status === 'running'"
+                class="tiny-button"
+                type="button"
+                @click="runAction(() => refreshJob(job.job_id))"
+              >刷新</button>
+            </div>
+            <div v-if="job.output_text" class="subtext" style="white-space: pre-wrap; margin-top: 4px;">{{ job.output_text }}</div>
+            <div v-if="job.output_uri" class="subtext">素材地址：{{ job.output_uri }}</div>
+            <div v-if="job.error_message" class="subtext" style="color: var(--color-danger);">错误：{{ job.error_message }}</div>
+          </li>
+        </ul>
       </section>
         </main>
 
