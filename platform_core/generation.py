@@ -49,6 +49,10 @@ class GenerationResult:
     output_uri: str = ""
     provider_job_id: str = ""
     error_message: str = ""
+    input_tokens: int = 0
+    output_tokens: int = 0
+    image_count: int = 0
+    video_seconds: int = 0
 
 
 @dataclass(frozen=True)
@@ -71,15 +75,20 @@ class FakeProviderAdapter(ProviderAdapter):
     def invoke(self, route: ModelRoute, grounded_prompt: GroundedPrompt) -> GenerationResult:
         capability = route.platform_model.capability
         if capability == CapabilityType.COPYWRITING:
+            input_tokens = max(len(grounded_prompt.user_prompt.split()), 1) * 12
+            output_text = (
+                f"[copy] Generated with brand {grounded_prompt.audit.brand_name}: "
+                f"{grounded_prompt.user_prompt.splitlines()[0]}"
+            )
+            output_tokens = max(len(output_text.split()), 1) * 14
             return GenerationResult(
                 job_id="",
                 status=JobStatus.SUCCEEDED,
                 provider_id=route.provider.id,
                 provider_model_name=route.binding.provider_model_name,
-                output_text=(
-                    f"[copy] Generated with brand {grounded_prompt.audit.brand_name}: "
-                    f"{grounded_prompt.user_prompt.splitlines()[0]}"
-                ),
+                output_text=output_text,
+                input_tokens=input_tokens,
+                output_tokens=output_tokens,
             )
         if capability == CapabilityType.IMAGE_GENERATION:
             return GenerationResult(
@@ -88,6 +97,7 @@ class FakeProviderAdapter(ProviderAdapter):
                 provider_id=route.provider.id,
                 provider_model_name=route.binding.provider_model_name,
                 output_uri=f"oss://generated/{route.platform_model.alias}/image.png",
+                image_count=1,
             )
         if capability == CapabilityType.VIDEO_GENERATION:
             return GenerationResult(
@@ -96,6 +106,7 @@ class FakeProviderAdapter(ProviderAdapter):
                 provider_id=route.provider.id,
                 provider_model_name=route.binding.provider_model_name,
                 provider_job_id=f"provider-job-{route.binding.id}",
+                video_seconds=10,
             )
         raise ValueError(f"Unsupported capability: {capability}")
 
@@ -136,6 +147,10 @@ class GenerationOrchestrator:
             output_uri=result.output_uri,
             provider_job_id=result.provider_job_id,
             error_message=result.error_message,
+            input_tokens=result.input_tokens,
+            output_tokens=result.output_tokens,
+            image_count=result.image_count,
+            video_seconds=result.video_seconds,
         )
         self.jobs[request.job_id] = GenerationJob(
             request=job.request,
@@ -164,6 +179,7 @@ class GenerationOrchestrator:
             provider_model_name=job.route.binding.provider_model_name,
             output_uri=output_uri,
             provider_job_id=f"provider-job-{job.route.binding.id}",
+            video_seconds=10,
         )
 
     def build_provider_invocation(self, request: GenerationRequest) -> ProviderInvocation:

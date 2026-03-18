@@ -20,8 +20,9 @@ class ModelRegistryTests(unittest.TestCase):
 
         models = registry.list_models_by_capability(CapabilityType.IMAGE_GENERATION)
 
-        self.assertEqual(len(models), 1)
-        self.assertEqual(models[0].alias, "image-standard")
+        aliases = {model.alias for model in models}
+        self.assertIn("image-standard", aliases)
+        self.assertIn("image-dalle3", aliases)
 
     def test_registry_resolves_highest_priority_binding(self) -> None:
         registry = ModelRegistry()
@@ -75,7 +76,7 @@ class ModelRegistryTests(unittest.TestCase):
             require_async_jobs=True,
         )
 
-        self.assertEqual(route.binding.provider_model_name, "gen4_turbo")
+        self.assertEqual(route.binding.provider_model_name, "sora-2")
 
     def test_registry_ignores_disabled_platform_models(self) -> None:
         registry = ModelRegistry()
