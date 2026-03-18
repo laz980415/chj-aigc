@@ -73,34 +73,34 @@ public class MybatisAuthStore implements AuthStore {
 
     private AuthUser mapUser(Map<String, Object> row) {
         String username = RowValueHelper.string(row, "username");
-        String displayName = RowValueHelper.string(row, "displayName", "display_name");
-        String roleKey = RowValueHelper.string(row, "roleKey", "role_key");
+        String displayName = RowValueHelper.string(row, "displayName", "display_name", "displayname");
+        String roleKey = RowValueHelper.string(row, "roleKey", "role_key", "rolekey");
         return new AuthUser(
                 RowValueHelper.string(row, "id"),
                 username,
                 RowValueHelper.string(row, "password"),
                 displayName != null ? displayName : username,
                 roleKey != null ? roleKey : "tenant_member",
-                RowValueHelper.string(row, "tenantId", "tenant_id"),
+                RowValueHelper.string(row, "tenantId", "tenant_id", "tenantid"),
                 RowValueHelper.bool(row, "active")
         );
     }
 
     private AuthSession mapSession(Map<String, Object> row) {
-        Timestamp createdAt = RowValueHelper.timestamp(row, "createdAt", "created_at");
-        Timestamp expiresAt = RowValueHelper.timestamp(row, "expiresAt", "expires_at");
+        Timestamp createdAt = RowValueHelper.timestamp(row, "createdAt", "created_at", "createdat");
+        Timestamp expiresAt = RowValueHelper.timestamp(row, "expiresAt", "expires_at", "expiresat");
         Instant createdAtValue = createdAt == null ? Instant.now() : createdAt.toInstant();
         Instant expiresAtValue = expiresAt == null ? createdAtValue.plusSeconds(12 * 60 * 60) : expiresAt.toInstant();
         String username = RowValueHelper.string(row, "username");
-        String displayName = RowValueHelper.string(row, "displayName", "display_name");
-        String roleKey = RowValueHelper.string(row, "roleKey", "role_key");
+        String displayName = RowValueHelper.string(row, "displayName", "display_name", "displayname");
+        String roleKey = RowValueHelper.string(row, "roleKey", "role_key", "rolekey");
         return new AuthSession(
                 RowValueHelper.string(row, "token"),
-                RowValueHelper.string(row, "userId", "user_id"),
+                RowValueHelper.string(row, "userId", "userid", "user_id"),
                 username,
                 displayName != null ? displayName : username,
                 roleKey != null ? roleKey : "tenant_member",
-                RowValueHelper.string(row, "tenantId", "tenant_id"),
+                RowValueHelper.string(row, "tenantId", "tenant_id", "tenantid"),
                 createdAtValue,
                 expiresAtValue
         );

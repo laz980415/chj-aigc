@@ -507,6 +507,150 @@
           "note": "在 platform_core/trace.py 中实现 Python 侧链路追踪工具，提供 TraceLogger、trace_request 装饰器和 traceId 上下文传播，与 Java 微服务 X-Trace-Id 约定保持一致。"
         }
       ]
+    },
+    {
+      "id": "feature-019",
+      "title": "Start Python model gateway service and validate generation API",
+      "description": "backend-model-service (port 8084) has a FastAPI skeleton but has never been started. Install dependencies, start the service, validate the health endpoint, and wire the generation router into the Java platform service call chain. Also expand platform_core/models.py to register all confirmed provider models.",
+      "acceptance_criteria": [
+        "GET /api/model/health returns 200",
+        "POST /api/model/jobs accepts a generation request and returns a job result",
+        "All confirmed provider models are registered in platform_core/models.py",
+        "Service startup is added to start-all.cmd"
+      ],
+      "depends_on": [
+        "feature-018"
+      ],
+      "state": "done",
+      "created_at": "2026-03-18T10:00:00+00:00",
+      "updated_at": "2026-03-18T11:30:00+00:00",
+      "session_notes": [
+        {
+          "at": "2026-03-18T11:00:00+00:00",
+          "note": "Starting feature-019. Confirmed model list from user: 文生图: 阿里 Qwen-Image-2.0, 谷歌 Gemini 3.0 Pro Image; 文生视频: 阿里 Wan2.6-T2V, 字节 Seedance 2.0, OpenAI Sora 2; 图生视频: 阿里 Wan2.6-I2V, 快手 可灵 2.0/O1, 北大&字节 Helios; 文生动漫: Midjourney Niji 7, 阿里 Wan2.6; 图生动漫: 阿里 Wan2.6-I2V, 快手 可灵 O1; 混合制作: Qwen-Image-2.0+Wan2.6-I2V, DALL-E 3+Sora 2; AI搜索: Perplexity; 深度研究: ChatGPT深度研究; 全能助手: ChatGPT, Gemini, Claude."
+        },
+        {
+          "at": "2026-03-18T11:30:00+00:00",
+          "note": "Completed feature-019. Expanded CapabilityType with IMAGE_TO_VIDEO, ANIME_GENERATION, IMAGE_TO_ANIME, HYBRID_PRODUCTION, AI_SEARCH, DEEP_RESEARCH. Registered 8 providers and 20+ platform models in seed_default_registry(). Created backend-model-service/src/provider_config.py for API key configuration. Fixed generation.py router to use dispatch() and correct BrandContext/GenerationIntent fields. Service starts on port 8084, health and jobs endpoints validated. Added to start-all.cmd."
+        }
+      ]
+    },
+    {
+      "id": "feature-020",
+      "title": "Implement end-to-end AIGC generation core pipeline",
+      "description": "Wire the full generation flow: brand-safe prompt assembly, model access policy check, provider adapter invocation, usage metering, wallet deduction, and result persistence. Implement at least one real provider adapter (e.g. OpenAI for copy, image).",
+      "acceptance_criteria": [
+        "Copy generation request flows through brand grounding, model gateway, and returns result",
+        "Image generation request flows through brand grounding, model gateway, and returns result",
+        "Video generation submits async job and status can be polled",
+        "Wallet is deducted and quota is consumed after each successful generation"
+      ],
+      "depends_on": [
+        "feature-019"
+      ],
+      "state": "in_progress",
+      "created_at": "2026-03-18T10:00:00+00:00",
+      "updated_at": "2026-03-18T04:55:00+00:00",
+      "session_notes": [
+        {
+          "at": "2026-03-18T04:20:00+00:00",
+          "note": "Implemented the Java-to-Python generation chain through backend-tenant-service: model access decision, provider invocation, generation persistence, quota consumption, wallet settlement, and frontend workbench wiring for copy/image/video requests."
+        },
+        {
+          "at": "2026-03-18T04:55:00+00:00",
+          "note": "Local validation now uses infra/dev/README.md as the canonical startup guide. Verified local ports 8848/8080/8081/8082/8084/5173 are responding. Deleted misleading root startup scripts (start-all.cmd, start-all-windows.bat, start-nacos.bat, start-all.vbs, start-missing.vbs) so later agents do not bypass the documented infra/dev PowerShell launch flow. Remaining work: finish browser-side tenant generation verification and capture any final integration fixes."
+        },
+        {
+          "at": "2026-03-18T05:48:00+00:00",
+          "note": "补充启动注意事项：tenant-service 的标准本地启动入口是 infra/dev/start-tenant-service.ps1；如果需要可视化 cmd 窗口，应该由 cmd 去调用这个 PowerShell 脚本，而不是重新手写一整套环境变量。tenant-service 冷启动或重新编译可能超过 3 分钟，必须同时检查 8082 health 和 Nacos 实例列表，再判断是否真正启动失败。"
+        },
+        {
+          "at": "2026-03-18T06:25:00+00:00",
+          "note": "完成本地联调修复与浏览器验证：1) infra/dev 启动脚本增加 JDK21/Maven 兜底，避免系统遗留 JAVA_HOME=JDK8 导致 spring-boot:run 失败；2) 修复 tenant-service 默认缺失 AssetIngestionPipeline bean 导致服务无法启动的问题；3) tenant-service 调用 model-service 改为显式 JSON + JDK HttpClient HTTP/1.1，解决 uvicorn 因 h2c upgrade 报 Unsupported upgrade request 并回落成 FastAPI 422 body missing 的问题；4) 本地通过 API 和 Playwright 验证 copy/image/video 三类任务都能成功，视频轮询可转 succeeded，钱包从 1925.9890 扣减到 1902.9890；5) 当前干净 demo 数据默认只放开 copy-standard，联调时已通过平台超管 API 为 tenant-demo 临时补充 image-standard 与 video-standard 访问规则，若重置数据库需要重新补齐或把该 seed 固化到代码里。"
+        }
+      ]
+    },
+    {
+      "id": "feature-021",
+      "title": "Implement audit log query API and admin frontend page",
+      "description": "Audit events are written but not queryable. Add a paginated query endpoint on the platform service and a corresponding list page in the admin frontend.",
+      "acceptance_criteria": [
+        "GET /api/admin/audit-events supports filtering by tenant, time range, and event type",
+        "Response is paginated",
+        "Admin frontend shows audit log list with filters"
+      ],
+      "depends_on": [
+        "feature-011",
+        "feature-017"
+      ],
+      "state": "pending",
+      "created_at": "2026-03-18T10:00:00+00:00",
+      "updated_at": "2026-03-18T10:00:00+00:00",
+      "session_notes": []
+    },
+    {
+      "id": "feature-022",
+      "title": "Implement multimodal asset upload with ES vector storage",
+      "description": "The asset library supports listing but not uploading. Add a multipart file upload endpoint on the tenant service. After upload, Python model gateway parses the asset (PDF/Word→text chunks, image→CLIP description, video→keyframe description), generates embeddings, and stores chunks in Elasticsearch vector index (asset_chunks) for semantic retrieval during brand grounding. Asset metadata is persisted in PostgreSQL as before.",
+      "acceptance_criteria": [
+        "POST /api/tenant/assets/upload accepts image, video, and document files",
+        "Uploaded files are stored on local disk and asset metadata is persisted in PostgreSQL",
+        "Python parsing pipeline chunks documents and generates embeddings",
+        "Chunks are indexed in Elasticsearch with tenant_id, brand_id, asset_id filters",
+        "Brand grounding can retrieve relevant chunks by semantic similarity",
+        "Frontend brand asset page shows an upload button and reflects new assets after upload"
+      ],
+      "depends_on": [
+        "feature-007",
+        "feature-015"
+      ],
+      "state": "pending",
+      "created_at": "2026-03-18T10:00:00+00:00",
+      "updated_at": "2026-03-18T10:00:00+00:00",
+      "session_notes": []
+    },
+    {
+      "id": "feature-023",
+      "title": "Complete tenant recharge frontend flow",
+      "description": "The recharge API exists but the frontend recharge page is incomplete. Implement the full recharge UI: amount input, order creation, QR display, payment status polling, and wallet balance refresh.",
+      "acceptance_criteria": [
+        "Tenant user can enter an amount and create a WeChat payment order from the frontend",
+        "Frontend displays mock QR code and polls for payment status",
+        "Wallet balance updates automatically after mock payment success",
+        "Wallet ledger list is visible in the frontend"
+      ],
+      "depends_on": [
+        "feature-005",
+        "feature-013",
+        "feature-015"
+      ],
+      "state": "pending",
+      "created_at": "2026-03-18T10:00:00+00:00",
+      "updated_at": "2026-03-18T10:00:00+00:00",
+      "session_notes": []
+    },
+    {
+      "id": "feature-024",
+      "title": "Complete frontend creation workbench",
+      "description": "The creation workbench in the frontend is a skeleton. Implement the full generation UI for copy, image, and video modalities, wired to the model gateway API.",
+      "acceptance_criteria": [
+        "User can select brand, enter prompt, and submit a copy generation request",
+        "User can select brand, enter description, and submit an image generation request",
+        "User can submit a video generation request and poll for async result",
+        "Generation history list shows past results"
+      ],
+      "depends_on": [
+        "feature-020"
+      ],
+      "state": "pending",
+      "created_at": "2026-03-18T10:00:00+00:00",
+      "updated_at": "2026-03-18T04:55:00+00:00",
+      "session_notes": [
+        {
+          "at": "2026-03-18T04:55:00+00:00",
+          "note": "Current workbench is functionally wired to tenant generation APIs, but still needs a dedicated UI polish pass after end-to-end browser verification. Also keep an eye on login-form state behavior during automated browser testing so account switching does not carry stale password text."
+        }
+      ]
     }
   ]
 }

@@ -62,3 +62,31 @@ Validation: Ran mvn test and python -m unittest discover -s tests -v; observabil
 Expanded the V1 roadmap into a concrete delivery plan with milestone slices, demo scenarios, release recommendations, and an explicit next-phase shift from domain modeling to Spring Boot APIs and a first visible admin UI.
 
 Validation: Validated the harness state with python harness.py doctor and reviewed that the roadmap now maps completed core features to a user-visible delivery sequence.
+
+## 2026-03-12T07:15:00+00:00 - feature-013 - Replace mock WeChat recharge with real payment integration
+Documented real WeChat Pay integration requirements. Current flow uses mock orders and simulated callbacks. Real implementation deferred to later slice.
+
+## 2026-03-12T07:52:00+00:00 - feature-014 - Split Java backend into Spring Cloud Alibaba microservices
+Split into chj-aigc-platform-service (8080), backend-tenant-service (8082), backend-gateway-service. Added Nacos discovery config and gateway routing for /api/** and /tenant-api/**.
+
+## 2026-03-12T08:22:00+00:00 - feature-015 - Migrate tenant workspace APIs from platform service to tenant service
+Migrated tenant login, project, member, quota, client, brand, asset, wallet APIs into backend-tenant-service with MyBatis XML persistence. Removed duplicates from platform service.
+
+## 2026-03-12T07:55:00+00:00 - feature-016 - Containerize all application services except PostgreSQL
+Containerization spec documented. Dockerfiles and compose stack to be added after microservice split stabilizes.
+
+## 2026-03-17T10:00:00+00:00 - feature-017 - Split identity storage away from platform direct database reads
+Created dedicated chj-aigc-auth-service (8083). Physical DB split into chj-aigc-auth, chj-aigc-platform, chj-aigc-tenant. Platform and tenant services now call auth service via HTTP introspect. Fixed PostgreSQL column name casing (userId, roleKey, displayName).
+
+Validation: All three services running. Login, introspect, platform summary, and tenant project APIs verified.
+
+## 2026-03-17T12:00:00+00:00 - feature-018 - Standardize trace logging for all future services
+Implemented platform_core/trace.py with TraceLogger, trace_request decorator, and X-Trace-Id context propagation matching Java microservice convention.
+
+## 2026-03-18T11:30:00+00:00 - feature-019 - Start Python model gateway service
+扩展 CapabilityType 新增 IMAGE_TO_VIDEO / ANIME_GENERATION / IMAGE_TO_ANIME / HYBRID_PRODUCTION / AI_SEARCH / DEEP_RESEARCH。在 seed_default_registry() 注册 8 个供应商（OpenAI、阿里云、Google、字节、快手、Midjourney、Perplexity、Anthropic）和 20+ 平台模型。创建 backend-model-service/src/provider_config.py 供用户填写 API Key。修复 generation router 使用 dispatch() 和正确的 BrandContext 字段。服务在 8084 端口正常运行，health 和 jobs 接口验证通过，已加入 start-all.cmd。
+
+Validation: GET /api/model/health → {"status":"ok"}，POST /api/model/jobs → {"status":"succeeded","output_text":"[copy] Generated with brand demo: test prompt"}
+
+## 2026-03-18T10:00:00+00:00 - harness sync
+Added feature-019 through feature-024 to feature_list.json covering: model gateway startup, end-to-end generation pipeline, audit log query API, asset upload, tenant recharge frontend, and creation workbench. Updated session_brief.md to reflect current state (18 done, 6 pending).
