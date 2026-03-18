@@ -753,6 +753,9 @@ function syncMemberRoleDrafts() {
   members.value.forEach((member) => {
     memberRoleDrafts[member.id] = member.roleKey;
   });
+  users.value.forEach((user) => {
+    memberRoleDrafts[user.id] = user.roleKey;
+  });
 }
 
 function syncWorkspaceNavigation() {
