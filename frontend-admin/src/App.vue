@@ -678,30 +678,32 @@ async function createMember() {
   await loadDashboard();
 }
 
-// 租户负责人启用或停用成员，方便后续停权排查。
+// 启用或停用账号：平台超管走认证服务接口，租户负责人走租户成员接口。
 async function updateMemberStatus(member: UserPayload, active: boolean) {
   success.value = "";
   error.value = "";
-  await fetchJson<UserPayload>(`/api/tenant/members/${member.id}/status`, {
+  const url = isPlatformAdmin.value
+    ? `/api/auth/users/${member.id}/status`
+    : `/api/tenant/members/${member.id}/status`;
+  await fetchJson<UserPayload>(url, {
     method: "POST",
-    headers: {
-      "Content-Type": "application/json",
-    },
+    headers: { "Content-Type": "application/json" },
     body: JSON.stringify({ active }),
   });
   success.value = `成员 ${member.displayName} 已${active ? "启用" : "停用"}`;
   await loadDashboard();
 }
 
-// 租户负责人调整成员角色，限制在租户负责人与租户成员之间切换。
+// 调整账号角色：平台超管走认证服务接口，租户负责人走租户成员接口。
 async function updateMemberRole(member: UserPayload) {
   success.value = "";
   error.value = "";
-  await fetchJson<UserPayload>(`/api/tenant/members/${member.id}/role`, {
+  const url = isPlatformAdmin.value
+    ? `/api/auth/users/${member.id}/role`
+    : `/api/tenant/members/${member.id}/role`;
+  await fetchJson<UserPayload>(url, {
     method: "POST",
-    headers: {
-      "Content-Type": "application/json",
-    },
+    headers: { "Content-Type": "application/json" },
     body: JSON.stringify({ roleKey: memberRoleDrafts[member.id] ?? member.roleKey }),
   });
   success.value = `成员 ${member.displayName} 角色已更新`;
@@ -1114,15 +1116,46 @@ onBeforeUnmount(() => {
                 <th>角色</th>
                 <th>租户</th>
                 <th>状态</th>
+                <th>操作</th>
               </tr>
             </thead>
             <tbody>
               <tr v-for="user in users" :key="user.id">
                 <td>{{ user.username }}</td>
                 <td>{{ user.displayName }}</td>
-                <td>{{ user.roleKey }}</td>
+                <td>
+                  <select
+                    v-model="memberRoleDrafts[user.id]"
+                    class="member-role-select"
+                    :disabled="session?.userId === user.id"
+                  >
+                    <option value="platform_admin">平台超管</option>
+                    <option value="tenant_owner">租户负责人</option>
+                    <option value="tenant_member">租户成员</option>
+                  </select>
+                </td>
                 <td>{{ user.tenantId ?? "-" }}</td>
                 <td>{{ user.active ? "启用" : "停用" }}</td>
+                <td class="inline-actions">
+                  <button
+                    class="tiny-button"
+                    type="button"
+                    :disabled="session?.userId === user.id || memberRoleDrafts[user.id] === user.roleKey"
+                    @click="runAction(() => updateMemberRole(user))"
+                  >保存角色</button>
+                  <button
+                    class="tiny-button"
+                    type="button"
+                    :disabled="session?.userId === user.id || user.active"
+                    @click="runAction(() => updateMemberStatus(user, true))"
+                  >启用</button>
+                  <button
+                    class="tiny-button danger-button"
+                    type="button"
+                    :disabled="session?.userId === user.id || !user.active"
+                    @click="runAction(() => updateMemberStatus(user, false))"
+                  >停用</button>
+                </td>
               </tr>
             </tbody>
           </table>
